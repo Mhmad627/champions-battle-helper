@@ -423,6 +423,7 @@ function renderField(){
     let txt = good.length ? 'Helps ' + (mon ? mon.name : 'your ' + good.join(' & ')) : '';
     if (!txt && f.safe && sel.some(t => f.safe.includes(t))) txt = 'No damage to ' + (mon ? mon.name : 'your pick');
     el.hidden = !txt; el.textContent = txt;
+    el.parentNode.classList.toggle('helps', !!txt);
   });
 }
 

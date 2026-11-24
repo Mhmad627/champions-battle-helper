@@ -371,6 +371,7 @@ mark{background:color-mix(in srgb,var(--focus) 38%,transparent);color:inherit;bo
 .fgroup-h small{display:block;font-size:14.5px;font-weight:500;color:var(--faint);font-stretch:100%}
 .fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .fcard{position:relative;padding:20px;border-radius:22px;background:var(--panel);border:1px solid var(--line)}
+.fcard.helps{border-color:var(--good);box-shadow:inset 0 0 0 1px var(--good)}
 .fcard-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 .ficon{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;flex:none;color:var(--fc);background:color-mix(in srgb,var(--fc) 18%,transparent)}
 .ficon svg{width:28px;height:28px}
