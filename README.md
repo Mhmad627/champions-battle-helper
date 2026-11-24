@@ -7,7 +7,7 @@ It's made for phones, so you can check a matchup mid-battle without memorising t
 ## Features
 
 - **Pokémon lookup:** search all 1,230 Pokémon and forms, including regional forms and Megas. Typos are fine.
-- **Champions roster:** Pokémon and forms that aren't in Champions are still listed, marked "Not in Champions". Special cases get a short note (for example, Floette is only allowed in its Eternal Flower form).
+- **Champions roster:** Pokémon and forms that aren't in Champions are still listed, marked "Not in Champions yet" (or "Not in Champions" for forms that aren't coming). Special cases get a short note (for example, Floette is only allowed in its Eternal Flower form).
 - **Battle plan:** "Hit it with" and "Don't bother with" lists. Tap any matchup to see the maths behind it.
 - **Two views:** *I'm fighting it* shows what beats it. *I'm using it* shows what to watch out for and what its own moves are strong against.
 - **Ability-aware:** abilities like Levitate, Flash Fire or Thick Fat are applied, or flagged as "might have" when the Pokémon has more than one possible ability.

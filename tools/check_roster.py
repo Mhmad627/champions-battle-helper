@@ -39,8 +39,8 @@ IGNORED_FORMS = {'670-e'}
 MEGA_ALIASES = {
     # 'Mega Example': 'Mega Example Form',
 }
-# Form sprites ("dex-suffix") you've already checked and that need no change on the site,
-# e.g. '479-h' if Serebii adds Heat Rotom (every Rotom form already counts once Rotom is listed).
+# Form sprites ("dex-suffix") you've checked by hand. Listing one here means "this sprite shows the
+# Pokémon is in the game" (e.g. '479-h' for Heat Rotom). Unknown sprites are only flagged, never counted.
 KNOWN_FORMS = set()
 SPRITE = re.compile(r'/pokemonhome/pokemon/small/(\d+)(?:-([a-z0-9]+))?\.png"[^>]*?alt="([^"]*?) Image"')
 
@@ -83,7 +83,7 @@ def parse_serebii(page, mons):
     species, plain, megas, regional, unknown = set(), set(), set(), set(), set()
     for no, suf, alt in SPRITE.findall(page):
         no, alt = int(no), html.unescape(alt).strip()
-        if not suf or f'{no}-{suf}' in IGNORED_FORMS:
+        if not suf or f'{no}-{suf}' in IGNORED_FORMS or f'{no}-{suf}' in KNOWN_FORMS:
             species.add(no)
             plain.add(no)  # the regular form is listed
         elif suf in MEGA_SUFFIX and alt.startswith('Mega '):
@@ -94,9 +94,7 @@ def parse_serebii(page, mons):
             species.add(no)
             regional.add((no, REGIONAL[suf]))
         else:
-            species.add(no)
-            if f'{no}-{suf}' not in KNOWN_FORMS:
-                unknown.add(f'{alt} #{no} (sprite "{no}-{suf}")')
+            unknown.add((no, f'{alt} #{no} (sprite "{no}-{suf}")'))
     # Sanity checks: if the page layout changed, don't wipe the roster.
     if len(species) < 100 or len(megas) < 10:
         fail(f'only found {len(species)} Pokémon and {len(megas)} Megas on the page; its layout has probably changed')
@@ -152,27 +150,36 @@ def main():
 
     mons = site_pokemon()
     s_species, s_plain, s_megas, s_regional, unknown = parse_serebii(fetch(args.file), mons)
+    # A Pokémon that only shows up with an unknown sprite code keeps its current status until checked by hand.
+    unknown_dex = {no for no, _ in unknown}
+    unknown = {text for _, text in unknown}
     site_names = {n for n, _ in mons}
     text, c_species, c_megas, c_not = read_champions()
     name_of = {}
     for n, no in mons:
         name_of.setdefault(no, n)
+    keep = (c_species & unknown_dex) - s_species
+    s_species |= keep
+    s_plain |= keep
 
     # notForms entries this script manages: regional forms, and the regular form of each Pokémon.
     # A regional form Serebii doesn't list, or a regular form when Serebii only lists a regional
     # one (e.g. only Hisuian Typhlosion), goes in notForms. Other entries are left alone.
     prefix = region_of
+    # For Pokémon that have regional forms, the script also manages their other (non-regional) forms,
+    # e.g. Darmanitan and Zen Darmanitan. Forms of other Pokémon (like Ash's Greninja) stay hand-edited.
+    has_regional = {no for n, no in mons if prefix(n)}
     regular = set(name_of.values())
-    managed = regular | {n for n, _ in mons if prefix(n)}
+    managed = regular | {n for n, no in mons if no in has_regional and not n.startswith('Mega ')}
     want_not = set()
     for n, no in mons:
-        if no not in s_species:
+        if no not in s_species or n.startswith('Mega '):
             continue
         if prefix(n):
             if (no, prefix(n)) not in s_regional:
                 want_not.add(n)
-        elif n in regular and no not in s_plain and any(rno == no for rno, _ in s_regional):
-            want_not.add(n)
+        elif no in has_regional and no not in s_plain:
+            want_not.add(n)  # only a regional form is in the game
     # Keep the existing order; drop entries that no longer apply and add new ones at the end.
     # Entries for Pokémon that left the roster entirely are kept (they don't matter until it returns).
     dex_of = dict(mons)
@@ -212,9 +219,9 @@ def main():
                         + ', '.join(bad_megas) + '. If they are new, re-run tools/build_data.py. If the site just names '
                         'them differently, add them to MEGA_ALIASES in tools/check_roster.py.')
     if unknown:
-        warnings.append('These forms use a sprite code the script doesn\'t know, so only the Pokémon itself was counted: '
-                        + ', '.join(sorted(unknown)) + '. Check them, fix data/champions.js by hand if needed '
-                        '(e.g. add to notForms), then add the codes to KNOWN_FORMS in tools/check_roster.py.')
+        warnings.append('These forms use a sprite code the script doesn\'t know, so they weren\'t counted (a Pokémon already on the roster keeps its current status): '
+                        + ', '.join(sorted(unknown)) + '. Check them; if they show the Pokémon is in the game, add the '
+                        'codes to KNOWN_FORMS in tools/check_roster.py (and add any forms that aren\'t in the game to notForms).')
     changed = bool(report)
 
     summary = ('Serebii\'s Champions list differs from `data/champions.js`.\n\n' + '\n\n'.join(report)

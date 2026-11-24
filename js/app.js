@@ -29,8 +29,9 @@ const WORD = x => x === 0 ? 'No effect' : x > 1 ? 'Super effective' : x < 1 ? 'N
 const MON = window.POKEMON.map(([name, no, types, abil, hidden, key], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-') }));
 const CH_SPECIES = new Set((window.CHAMPIONS || {}).species || []), CH_MEGAS = new Set((window.CHAMPIONS || {}).megas || []);
 const CH_NOT = new Set((window.CHAMPIONS || {}).notForms || []), CH_NOTES = (window.CHAMPIONS || {}).notes || {};
-// Forms listed in notForms aren't coming, so they don't get "yet".
-const notIn = m => CH_NOT.has(m.name) ? 'Not in Pokémon Champions' : 'Not in Pokémon Champions yet';
+// Forms in notForms of a Pokémon that is in the game aren't coming, so they don't get "yet".
+// `short` drops "Pokémon" for the search list.
+const notIn = (m, short) => `Not in ${short ? '' : 'Pokémon '}Champions${CH_NOT.has(m.name) && CH_SPECIES.has(m.no) ? '' : ' yet'}`;
 MON.forEach(m => m.champ = m.name.startsWith('Mega ') ? CH_MEGAS.has(m.name) : CH_SPECIES.has(m.no) && !CH_NOT.has(m.name));
 const BY_SLUG = new Map(MON.map(m => [m.slug, m]));
 const AB = window.ABILITIES.map(([name, gen, desc, sum]) => ({ name, gen, desc, sum }));
@@ -100,7 +101,7 @@ function renderSug(){
   sugItems = search(v); sugActive = sugItems.length ? 0 : -1;
   sug.innerHTML = sugItems.length ? sugItems.map((r, k) => r.kind === 'type'
     ? `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${icon(r.t, 24)}</span><span class="nm">${r.t}</span><span class="kind">type</span></li>`
-    : `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${r.m.champ ? '' : `<span class="nic">${CH_NOT.has(r.m.name) ? 'Not in Champions' : 'Not in Champions yet'}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
+    : `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${r.m.champ ? '' : `<span class="nic">${notIn(r.m, true)}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
     : `<li class="empty">No Pokémon or type called “${esc(v.trim())}”. Check the spelling?</li>`;
   sug.hidden = false; q.setAttribute('aria-expanded', 'true');
   markActive();
