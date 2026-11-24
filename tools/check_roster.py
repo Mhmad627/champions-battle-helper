@@ -46,26 +46,36 @@ def fetch(path):
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 raw = r.read()
+                charset = r.headers.get_content_charset()
         except Exception as e:
             fail(f"couldn't download {URL} ({e})")
+        if charset:
+            return raw.decode(charset, errors='replace')
+    # Serebii serves ISO-8859-1; names with accents are HTML entities, so this is safe for saved copies too.
     return raw.decode('iso-8859-1')
 
 
-def parse_serebii(page):
+def parse_serebii(page, mons):
+    # Sprite suffixes are short codes that Serebii reuses (e.g. '-m' is Mega, but also Midnight Lycanroc;
+    # '-h' is Hisuian, but also Heat Rotom). So a suffix only counts as a Mega when the name says "Mega",
+    # and as a regional form only when the site really has that regional form. Anything else is flagged.
+    site_regional = {(no, p) for n, no in mons for p in REGIONAL.values() if n.startswith(p + ' ')}
     species, megas, regional, unknown = set(), set(), set(), set()
     for no, suf, alt in SPRITE.findall(page):
         no, alt = int(no), html.unescape(alt)
-        if suf is None or suf == '':
+        if not suf:
             species.add(no)
-        elif suf in MEGA_SUFFIX:
+        elif suf in MEGA_SUFFIX and alt.startswith('Mega '):
             megas.add(alt + MEGA_SUFFIX[suf])
-        elif suf in REGIONAL:
+        elif suf in REGIONAL and (no, REGIONAL[suf]) in site_regional:
+            # Covers every form with that prefix, e.g. all three Paldean Tauros breeds share one sprite.
             species.add(no)
             regional.add((no, REGIONAL[suf]))
         elif suf in IGNORED_SUFFIXES:
             species.add(no)
         else:
-            unknown.add(f'{alt} (sprite suffix "-{suf}")')
+            species.add(no)
+            unknown.add(f'{alt} #{no} (sprite suffix "-{suf}")')
     # Sanity checks: if the page layout changed, don't wipe the roster.
     if len(species) < 100 or len(megas) < 10:
         fail(f'only found {len(species)} Pokémon and {len(megas)} Megas on the page; its layout has probably changed')
@@ -119,8 +129,8 @@ def main():
     ap.add_argument('--summary', help='write a Markdown summary of the changes to this file')
     args = ap.parse_args()
 
-    s_species, s_megas, s_regional, unknown = parse_serebii(fetch(args.file))
     mons = site_pokemon()
+    s_species, s_megas, s_regional, unknown = parse_serebii(fetch(args.file), mons)
     site_names = {n for n, _ in mons}
     text, c_species, c_megas, c_not = read_champions()
     name_of = {}
@@ -138,6 +148,12 @@ def main():
     cur_regional_not = sorted(n for n in c_not if n not in keep_not)
 
     bad_megas = sorted(m for m in s_megas if m not in site_names)
+    # If most Mega names don't match the site, Serebii probably changed how it writes them: stop rather
+    # than replace a good list. Otherwise leave the unmatched ones out and flag them below.
+    if len(bad_megas) * 2 > len(s_megas):
+        fail(f'{len(bad_megas)} of {len(s_megas)} Mega names on the page don\'t match data/pokemon.js '
+             f'(e.g. {", ".join(bad_megas[:3])}); the page format has probably changed')
+    s_megas -= set(bad_megas)
     added = sorted(s_species - c_species)
     removed = sorted(c_species - s_species)
     megas_added = sorted(s_megas - c_megas)
@@ -157,11 +173,11 @@ def main():
     section('Regional forms not available', forms_now_out)
     warnings = []
     if bad_megas:
-        warnings.append('These Megas on Serebii have no matching name in data/pokemon.js, so the site will show them as '
-                        'not in Champions. Rename them in data/champions.js, or re-run tools/build_data.py if they are new: '
+        warnings.append('These Megas on Serebii have no matching name in data/pokemon.js, so they were left out. '
+                        'Add them to data/champions.js by hand under the site\'s name, or re-run tools/build_data.py if they are new: '
                         + ', '.join(bad_megas))
     if unknown:
-        warnings.append('These forms use a sprite suffix the script doesn\'t know, so they were skipped. Check them by hand: '
+        warnings.append('These forms use a sprite suffix the script doesn\'t know, so only the Pokémon itself was counted, not the form. Check them by hand: '
                         + ', '.join(sorted(unknown)))
     changed = bool(report)
 
