@@ -28,7 +28,7 @@ function removeFromTeam(i){
 /* Button on the lookup's battle plan (called from renderPlan in app.js). */
 function teamButton(m){
   const on = onTeam(m), full = !on && team.length >= TEAM_MAX;
-  return `<button class="btn team-add" data-addteam="${m.slug}" aria-pressed="${on}"${full ? ' disabled title="The team is full"' : on ? ' title="Tap to take it off the team"' : ''}>${on ? 'On your team' : full ? 'Team is full' : 'Add to team'}</button>`;
+  return `<button class="btn team-add" data-addteam="${m.slug}" aria-pressed="${on}"${full ? ' disabled title="The team is full"' : on ? ' title="Tap to take it off the team"' : ''}>${on ? 'On the team' : full ? 'Team is full' : 'Add to team'}</button>`;
 }
 
 /* ---------- Search box ---------- */
@@ -93,7 +93,6 @@ const stabHitters = d => team.filter(m => m.types.some(s => mult(s, d) === 2));
 const who = (p, good, t) => `<${p.warn.length && t ? `button data-twhy="${t}"` : 'span'} class="who ${p.x === 0 ? 'zero' : p.x > 1 ? (good ? 'good' : 'bad') : (good ? 'bad' : 'good')}${p.x >= 4 ? ' x4' : ''}${p.warn.length ? ' warn' : ''}"${p.warn.length ? ` title="Unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}"` : ''}>${esc(p.m.name)} ${fmt(p.x)}${p.warn.length ? `<span class="sr">, unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}</span>` : ''}</${p.warn.length && t ? 'button' : 'span'}>`;
 const typeBtn = t => `<button class="trow-type" data-twhy="${t}" aria-label="${t}: show the matchup against each Pokémon">${icon(t, 32)}<span>${t}</span></button>`;
 const typeLabel = t => `<span class="trow-type">${icon(t, 32)}<span>${t}</span></span>`;
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 function rows(list, good, sumFn){
   return `<ul class="trows">${list.map(r => `<li class="trow">${typeBtn(r.t)}<span class="trow-who">${r.weak.map(p => who(p, good, r.t)).join('')}</span><span class="trow-sum">${sumFn(r)}</span></li>`).join('')}</ul>`;
@@ -139,7 +138,8 @@ function fightView(A, n){
     : 'No move type is super effective on any of them.'}</p>`;
 
   h += `<div class="plan-sec"><h3>Hit them with <small>${term('super effective', 'super effective')} on the most of their team</small></h3>${hit.length
-    ? rows(hit.slice(0, 8), true, r => `hits ${r.weak.length}${r.res.length ? ' · ' + stopParts(r).join(' · ') : ''}`)
+    ? (() => { const sum = r => `hits ${r.weak.length}${r.res.length ? ' · ' + stopParts(r).join(' · ') : ''}`;
+        return rows(hit.slice(0, 8), true, sum) + (hit.length > 8 ? `<details class="more"><summary>${hit.length - 8} more move types hit at least one of them</summary>${rows(hit.slice(8), true, sum)}</details>` : '') })()
     : '<p class="none">Nothing. No move type is super effective here.</p>'}</div>`;
 
   const skip = A.filter(r => !r.weak.length && r.res.length >= Math.max(1, Math.ceil(n / 2))).sort((a, b) => b.res.length - a.res.length || idx(a.t) - idx(b.t));
@@ -159,7 +159,7 @@ function fightView(A, n){
   h += `<div class="plan-sec"><h3>Against each of them</h3><ul class="each">${team.map(m => {
     const best = profileOf(m.types, m).filter(p => p.x > 1).sort((a, b) => b.x - a.x || idx(a.t) - idx(b.t)).slice(0, 4);
     return `<li><button class="each-name" data-mon="${m.slug}" title="Look up ${esc(m.name)}">${monFace(m, 36)}${esc(m.name)}</button><span class="each-best">${best.length
-      ? best.map(p => `<span class="pair">${chip(p.t)}<span class="mult ${mcls(p.x)}">${fmt(p.x)}</span>${p.warn.length ? `<span class="pair-warn" title="Unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}">!<span class="sr"> unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}</span></span>` : ''}</span>`).join('')
+      ? best.map(p => `<span class="pair">${chip(p.t)}<span class="mult ${mcls(p.x)}">${fmt(p.x)}</span>${p.warn.length ? `<button class="pair-warn" data-twhy="${p.t}" title="Unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}">!<span class="sr"> unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}. Show details.</span></button>` : ''}</span>`).join('')
       : '<span class="none">Nothing is super effective</span>'}</span></li>`;
   }).join('')}</ul></div>`;
   return h;
@@ -237,6 +237,7 @@ function renderTeam(){
   $('teamSlots').innerHTML = team.map((m, i) => `<li class="tslot">${monImg(m, 44, 'tslot-mi')}<span class="ts">${m.types.map(t => icon(t, 22)).join('')}</span><span class="tslot-nm"><button class="tslot-name" data-mon="${m.slug}" title="Look up ${esc(m.name)}">${esc(m.name)}</button>${m.champ ? '' : `<span class="nic">${notIn(m, true)}</span>`}</span><button class="tslot-x" data-trm="${i}" aria-label="Remove ${esc(m.name)}">${X_SVG}</button></li>`).join('');
   $('teamCount').textContent = `${n} of ${TEAM_MAX}`;
   tq.disabled = n >= TEAM_MAX;
+  if (tq.disabled){ tq.value = ''; closeTSug() }   // e.g. filled by the sample team while something was typed
   tq.placeholder = n >= TEAM_MAX ? 'Team is full' : n ? 'Add another Pokémon' : 'Add a Pokémon, like Garchomp';
   $('teamClear').disabled = !n;
   document.querySelectorAll('[data-tmode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tmode === tmode));
