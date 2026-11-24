@@ -261,9 +261,9 @@ button.pair-warn{position:relative;border:0;padding:0;cursor:pointer}
 .ttable td.z{background:var(--zero);color:var(--zero-text)}
 .ttable td.warn::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--focus)}
 .ttable td.tc{cursor:crosshair;transition:opacity .12s}
-.ttable td.tc:focus-visible{outline:2.5px solid var(--focus);outline-offset:1px}
+.ttable td.tc:focus-visible{outline:2.5px solid var(--focus);outline-offset:-2.5px}
 .ttable.hovering td.tc.dim{opacity:.28}
-.ttable.hovering td.tc.focus{outline:2.5px solid var(--focus);outline-offset:1px;z-index:1}
+.ttable.hovering td.tc.focus{outline:2.5px solid var(--focus);outline-offset:-2.5px;z-index:1}
 .ttable thead th{border-radius:9px;transition:background .12s}
 .ttable thead th.on{background:var(--panel-2)}
 .ttable thead th.on .th-nm{color:var(--text)}
@@ -311,14 +311,15 @@ button.pair-warn{position:relative;border:0;padding:0;cursor:pointer}
 .rh{position:sticky;left:0;z-index:2;display:flex;align-items:center;gap:6px;border:0;border-radius:8px;padding:0 6px 0 2px;font-size:13px;font-weight:600;text-align:left;background:var(--panel);box-shadow:2px 0 0 var(--panel)}
 .rh .ti{width:calc(var(--cell) - 8px);height:calc(var(--cell) - 8px)}
 .rh.on{background:var(--panel-2);box-shadow:2px 0 0 var(--panel),inset 0 0 0 1.5px var(--text)}
-.cell:focus-visible{outline:2.5px solid var(--focus);outline-offset:1px}
+.cell:focus-visible{outline:2.5px solid var(--focus);outline-offset:-2.5px}
 .cell{display:grid;place-items:center;border-radius:6px;background:var(--panel-2);font-weight:750;font-size:13px;transition:opacity .12s;cursor:crosshair}
 .cell.s{background:var(--good-bg);color:var(--good)}
 .cell.r{background:var(--bad-bg);color:var(--bad)}
 .cell.z{background:var(--zero);color:var(--zero-text)}
 .cell.colsel{box-shadow:inset 0 0 0 1.5px var(--muted)}
 .grid.hovering .cell.dim{opacity:.28}
-.grid.hovering .cell.focus,.combo.focus{outline:2.5px solid var(--focus);outline-offset:1px;position:relative;z-index:1}
+/* The ring sits inside the square: the sticky row labels cover anything drawn outside the first column. */
+.grid.hovering .cell.focus,.combo.focus{outline:2.5px solid var(--focus);outline-offset:-2.5px;position:relative;z-index:1}
 .combo-h{display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--panel-2);font-size:10px;font-weight:700;color:var(--faint)}
 .combo-h .ti{width:calc(var(--cell) - 12px);height:calc(var(--cell) - 12px)}
 .combo-h .ti + .ti{margin-left:-6px}
