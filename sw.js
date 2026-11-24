@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v26';
+const VERSION = 'cbh-v27';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
@@ -44,38 +44,31 @@ self.addEventListener('activate', e => {
   const other = k => k.startsWith('cbh-icons-') ? k !== IMG : k !== VERSION;
   e.waitUntil(caches.keys()
     .then(keys => Promise.all(keys.filter(other).map(k => caches.delete(k))))
-    // If something emptied this cache meanwhile (e.g. two deploys in a row), download it again.
-    .then(() => complete()).then(done => done || fill().catch(() => {}))
     .then(() => self.clients.claim()));
+  // If something emptied this cache meanwhile (e.g. two deploys in a row), download it again in the
+  // background; until then, anything missing simply comes from the network.
+  complete().then(done => done || fill()).catch(() => {});
 });
 
-// Pages: try the network first so updates show up, fall back to the cache offline.
-// Everything else: cache first, then network (and remember it).
+const OFFLINE = new Response(`<!doctype html><meta name="viewport" content="width=device-width"><title>Offline</title><p style="font:16px system-ui;padding:24px">You're offline, and this page hasn't been saved yet. Connect once and it will work offline after that.</p>`,
+  { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+
+// Everything, pages included, comes from this version's cache first, so a page always runs with the
+// scripts and styles of its own version. A new deploy installs in the background and shows on the next visit.
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
-    const url = new URL(req.url), page = url.origin + url.pathname;   // stored once, without ?utm=… extras
-    e.respondWith(fetch(req).then(res => {
-      try {   // saving a copy must never stop the fresh page from showing
-        if (res.ok) e.waitUntil(plain(res.clone()).then(r => caches.open(VERSION).then(c => c.put(page, r))).catch(() => {}));
-      } catch {}
-      return res;
-    }).catch(() => {
-      // Offline.
-      const root = self.registration.scope, home = url.href.split(/[?#]/)[0] === root;
-      if (home) return own('./').then(r => r || own('index.html')).then(r => r || new Response(
-        `<!doctype html><meta name="viewport" content="width=device-width"><title>Offline</title><p style="font:16px system-ui;padding:24px">You're offline, and this page hasn't been saved yet. Connect once and it will work offline after that.</p>`,
-        { headers: { 'Content-Type': 'text/html; charset=utf-8' } }));
-      // /about/ -> /about, so the page's relative links (css/style.css) point to the stored files.
-      const path = url.pathname.replace(/\/$/, '');
-      if (path !== url.pathname) return Response.redirect(new URL(path + url.search, url).href, 302);
-      // /about is stored as about.html (hosts like Cloudflare Pages drop the .html), so try that too.
-      return own(page)
-        .then(r => r || (/\/[^./]+$/.test(path) ? own(path + '.html') : null))
-        // Anything else: go to the home page (served in place, its relative links would break).
-        .then(r => r || Response.redirect(root, 302));
-    }));
+    const url = new URL(req.url), root = new URL(self.registration.scope);
+    const home = url.pathname === root.pathname || url.pathname === root.pathname + 'index.html';
+    // /about/ -> /about, so the page's relative links (css/style.css) point to the stored files.
+    const path = url.pathname.replace(/\/$/, '');
+    if (!home && path !== url.pathname) { e.respondWith(Response.redirect(new URL(path + url.search, url).href, 302)); return }
+    // /about is stored as about.html (hosts like Cloudflare Pages drop the .html), so try that too.
+    const stored = home ? own('./') : own(url.origin + path).then(r => r || (/\/[^./]+$/.test(path) ? own(path + '.html') : null));
+    e.respondWith(stored.then(r => r || fetch(req).catch(() =>
+      // Offline and not stored: show the home page (by address, so its relative links work), or say so.
+      home ? OFFLINE.clone() : Response.redirect(root.href, 302))));
     return;
   }
   e.respondWith(own(req).then(hit => hit || caches.open(IMG).then(c => c.match(req))).then(hit => hit || fetch(req).then(res => {
