@@ -29,9 +29,9 @@ const WORD = x => x === 0 ? 'No effect' : x > 1 ? 'Super effective' : x < 1 ? 'N
 const MON = window.POKEMON.map(([name, no, types, abil, hidden, key], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-') }));
 const CH_SPECIES = new Set((window.CHAMPIONS || {}).species || []), CH_MEGAS = new Set((window.CHAMPIONS || {}).megas || []);
 const CH_NOT = new Set((window.CHAMPIONS || {}).notForms || []), CH_NOTES = (window.CHAMPIONS || {}).notes || {};
-// Forms in notForms of a Pokémon that is in the game aren't coming, so they don't get "yet".
-// `short` drops "Pokémon" for the search list.
-const notIn = (m, short) => `Not in ${short ? '' : 'Pokémon '}Champions${CH_NOT.has(m.name) && CH_SPECIES.has(m.no) ? '' : ' yet'}`;
+// Label for Pokémon and forms outside the roster. "Yet" because the roster changes with game updates.
+// `short` is the compact version for the search list.
+const notIn = (m, short) => short ? 'Not in Champions' : 'Not in Pokémon Champions yet';
 MON.forEach(m => m.champ = m.name.startsWith('Mega ') ? CH_MEGAS.has(m.name) : CH_SPECIES.has(m.no) && !CH_NOT.has(m.name));
 const BY_SLUG = new Map(MON.map(m => [m.slug, m]));
 const AB = window.ABILITIES.map(([name, gen, desc, sum]) => ({ name, gen, desc, sum }));

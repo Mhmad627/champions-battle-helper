@@ -74,8 +74,11 @@ def fetch(path):
                 return raw.decode(charset)
             except (LookupError, UnicodeDecodeError):
                 pass  # header was wrong; fall back below
-    # Serebii serves ISO-8859-1; names with accents are HTML entities, so this is safe for saved copies too.
-    return raw.decode('iso-8859-1')
+    # Saved copies are usually UTF-8; Serebii itself serves ISO-8859-1.
+    try:
+        return raw.decode('utf-8')
+    except UnicodeDecodeError:
+        return raw.decode('iso-8859-1')
 
 
 def parse_serebii(page, mons):
@@ -97,7 +100,8 @@ def parse_serebii(page, mons):
             species.add(no)
             regional.add((no, REGIONAL[suf]))
         else:
-            unknown.add((no, f'{alt} #{no} (sprite "{no}-{suf}")'))
+            maybe_mega = alt.startswith('Mega ') or suf in MEGA_SUFFIX
+            unknown.add((no, maybe_mega, f'{alt} #{no} (sprite "{no}-{suf}")'))
     # Sanity checks: if the page layout changed, don't wipe the roster.
     if len(species) < 100 or len(megas) < 10:
         fail(f'only found {len(species)} Pokémon and {len(megas)} Megas on the page; its layout has probably changed')
@@ -154,8 +158,9 @@ def main():
     mons = site_pokemon()
     s_species, s_plain, s_megas, s_regional, unknown = parse_serebii(fetch(args.file), mons)
     # A Pokémon that only shows up with an unknown sprite code keeps its current status until checked by hand.
-    unknown_dex = {no for no, _ in unknown}
-    unknown = {text for _, text in unknown}
+    unknown_dex = {no for no, _, _ in unknown}
+    unknown_mega = any(m for _, m, _ in unknown)
+    unknown = {text for _, _, text in unknown}
     site_names = {n for n, _ in mons}
     text, c_species, c_megas, c_not = read_champions()
     name_of = {}
@@ -176,7 +181,7 @@ def main():
     managed = regular | {n for n, no in mons if no in has_regional and not n.startswith('Mega ')}
     want_not = set()
     for n, no in mons:
-        if no not in s_species or n.startswith('Mega '):
+        if no not in s_species or no in unknown_dex or n.startswith('Mega '):
             continue
         if prefix(n):
             if (no, prefix(n)) not in s_regional:
@@ -186,7 +191,8 @@ def main():
     # Keep the existing order; drop entries that no longer apply and add new ones at the end.
     # Entries for Pokémon that left the roster entirely are kept (they don't matter until it returns).
     dex_of = dict(mons)
-    gone = {n for n in c_not if dex_of.get(n) not in s_species}
+    # Pokémon with an unknown sprite code also keep their current entries until checked by hand.
+    gone = {n for n in c_not if dex_of.get(n) not in s_species or dex_of.get(n) in unknown_dex}
     new_not = [n for n in c_not if n not in managed or n in want_not or n in gone] + sorted(want_not - set(c_not))
     forms_now_in = sorted(n for n in c_not if n in managed and n not in want_not and n not in gone)
     forms_now_out = sorted(want_not - set(c_not))
@@ -200,7 +206,7 @@ def main():
     s_megas -= set(bad_megas)
     # A Mega under an unknown sprite code or with an unmatched name may just have been renamed or recoded:
     # don't remove any Megas this run; the warnings ask for a check.
-    if bad_megas or any('Mega' in text or '-m' in text for text in unknown):
+    if bad_megas or unknown_mega:
         s_megas |= c_megas
     added = sorted(s_species - c_species)
     removed = sorted(c_species - s_species)
