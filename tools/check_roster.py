@@ -70,7 +70,10 @@ def fetch(path):
         except Exception as e:
             fail(f"couldn't download {URL} ({e})")
         if charset:
-            return raw.decode(charset, errors='replace')
+            try:
+                return raw.decode(charset)
+            except (LookupError, UnicodeDecodeError):
+                pass  # header was wrong; fall back below
     # Serebii serves ISO-8859-1; names with accents are HTML entities, so this is safe for saved copies too.
     return raw.decode('iso-8859-1')
 
@@ -162,14 +165,14 @@ def main():
     s_species |= keep
     s_plain |= keep
 
-    # notForms entries this script manages: regional forms, and the regular form of each Pokémon.
+    # notForms entries this script manages: every non-Mega form of Pokémon that have regional forms.
     # A regional form Serebii doesn't list, or a regular form when Serebii only lists a regional
     # one (e.g. only Hisuian Typhlosion), goes in notForms. Other entries are left alone.
     prefix = region_of
     # For Pokémon that have regional forms, the script also manages their other (non-regional) forms,
     # e.g. Darmanitan and Zen Darmanitan. Forms of other Pokémon (like Ash's Greninja) stay hand-edited.
     has_regional = {no for n, no in mons if prefix(n)}
-    regular = set(name_of.values())
+    regular = {name_of[no] for no in has_regional}
     managed = regular | {n for n, no in mons if no in has_regional and not n.startswith('Mega ')}
     want_not = set()
     for n, no in mons:
@@ -218,6 +221,10 @@ def main():
         warnings.append('These Megas on Serebii have no matching name in data/pokemon.js, so they were left out (and no Megas were removed this run, in case Serebii renamed some): '
                         + ', '.join(bad_megas) + '. If they are new, re-run tools/build_data.py. If the site just names '
                         'them differently, add them to MEGA_ALIASES in tools/check_roster.py.')
+    typos = [n for n in c_not if n not in site_names]
+    if typos:
+        warnings.append('These notForms names in data/champions.js don\'t match any Pokémon in data/pokemon.js, '
+                        'so they do nothing. Fix the spelling: ' + ', '.join(typos))
     if unknown:
         warnings.append('These forms use a sprite code the script doesn\'t know, so they weren\'t counted (a Pokémon already on the roster keeps its current status): '
                         + ', '.join(sorted(unknown)) + '. Check them; if they show the Pokémon is in the game, add the '
