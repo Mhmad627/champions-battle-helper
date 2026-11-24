@@ -96,8 +96,13 @@ for i in sorted(have):
     h.update(str(i).encode()); h.update(open(os.path.join(OUT, f'{i}.webp'), 'rb').read())
 sw_path = os.path.join(ROOT, 'sw.js')
 sw = open(sw_path, encoding='utf-8').read()
-sw = re.sub(r"const IMG = 'cbh-icons-[0-9a-f]+';", f"const IMG = 'cbh-icons-{h.hexdigest()[:8]}';", sw)
-open(sw_path, 'w', encoding='utf-8', newline='').write(sw)
+new = re.sub(r"const IMG = 'cbh-icons-[0-9a-f]+';", f"const IMG = 'cbh-icons-{h.hexdigest()[:8]}';", sw)
+if new != sw:
+    # Any change to sw.js makes phones reinstall it, so also bump VERSION: installs must never write into
+    # (or, after a failure, delete) the cache the running site is using.
+    new = re.sub(r"const VERSION = 'cbh-v(\d+)';", lambda v: f"const VERSION = 'cbh-v{int(v.group(1)) + 1}';", new, count=1)
+    open(sw_path, 'w', encoding='utf-8', newline='').write(new)
+    print('Icons changed: updated IMG and bumped VERSION in sw.js.')
 
 names = {p[6]: p[0] for p in mons}
 print(f'{len(have)} icons, {len(missing)} without a sprite: ' + ', '.join(names[i] for i in missing[:40]))
