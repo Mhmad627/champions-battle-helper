@@ -438,7 +438,17 @@ document.addEventListener('click', e => {
   const why = t.closest('[data-why]'); if (why){ whyPop(why, why.dataset.why); return }
   if (!t.closest('.pop')) closePop();
   const mb = t.closest('[data-mode]'); if (mb){ mode = mb.dataset.mode; renderPlan(); announce(); $('plan').querySelector(`[data-mode="${mode}"]`)?.focus(); return }
-  const mn = t.closest('[data-mon]'); if (mn){ const m = BY_SLUG.get(mn.dataset.mon); if (m){ setMon(m); goTo('sec-match'); $('plan').querySelector('.plan-name')?.focus({ preventScroll: true }) } return }
+  const mn = t.closest('[data-mon]'); if (mn){ const m = BY_SLUG.get(mn.dataset.mon); if (m){
+    // From the "Same typing" row: stay where you are, keeping that row at the same spot on screen,
+    // so you can tap through related Pokémon. From anywhere else: scroll up to the battle plan.
+    const row = mn.closest('.same'), top = row?.getBoundingClientRect().top;
+    setMon(m);
+    if (row){
+      const now = $('plan').querySelector('.same');
+      if (now) scrollBy({ top: now.getBoundingClientRect().top - top, behavior: 'instant' });
+      (now?.querySelector('button') || $('plan').querySelector('.plan-name'))?.focus({ preventScroll: true });
+    } else { goTo('sec-match'); $('plan').querySelector('.plan-name')?.focus({ preventScroll: true }) }
+  } return }
   if (!t.closest('#grid') && focused) clearFocus();
 });
 
@@ -514,13 +524,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'b'){ e.preventDefault(); openRank() }
 });
 
-/* ---------- Theme ---------- */
-$('theme').addEventListener('click', () => {
-  const r = document.documentElement;
-  r.dataset.theme = r.dataset.theme === 'light' ? 'dark' : 'light';
-  try { localStorage.setItem('tcs-theme', r.dataset.theme) } catch {}
-  document.querySelector('meta[name=theme-color]').content = r.dataset.theme === 'light' ? '#EDF0F8' : '#1A2140';
-});
+/* Theme button: see js/theme.js */
 
 /* ---------- Render + URL ---------- */
 function render(){
@@ -547,7 +551,6 @@ function fromHash(){
     mon = null; sel = [...new Set(list)].slice(0, 2);
   }
 }
-document.querySelector('meta[name=theme-color]').content = document.documentElement.dataset.theme === 'light' ? '#EDF0F8' : '#1A2140';
 addEventListener('popstate', () => { fromHash(); render() });
 fromHash();
 renderAbilities();

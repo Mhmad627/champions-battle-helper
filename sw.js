@@ -1,10 +1,10 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v3';
+const VERSION = 'cbh-v4';
 const TYPES = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
 const FILES = [
   './', 'index.html', 'about.html', 'manifest.webmanifest',
-  'css/style.css', 'js/data.js', 'js/app.js',
+  'css/style.css', 'js/data.js', 'js/app.js', 'js/theme.js',
   'data/pokemon.js', 'data/abilities.js', 'data/champions.js',
   'assets/fonts/bricolage-grotesque-latin.woff2',
   'assets/icons/icon-192.png', 'assets/icons/favicon-32.png',
