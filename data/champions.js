@@ -3,7 +3,8 @@
 // Pokémon not listed here still appear on the site, marked "Not in Pokémon Champions yet".
 //
 // tools/check_roster.py (run weekly by GitHub Actions) rewrites species, megas, and the notForms
-// entries for regional and regular forms. notes and any other notForms entries are hand-edited.
+// entries for Pokémon that have regional forms (Alolan, Galarian, Hisuian, Paldean). notes and the
+// notForms entries for other Pokémon (like Ash's Greninja) are hand-edited.
 //
 // species: National Dex numbers. Every non-Mega form of a listed species counts as available
 //          (regional forms included), except the forms named in notForms.

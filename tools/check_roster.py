@@ -4,9 +4,9 @@
     python tools/check_roster.py --write          # also update data/champions.js and bump sw.js VERSION
     python tools/check_roster.py --file page.html # use a saved copy of the page instead of downloading
 
-What it updates: `species`, `megas`, and the `notForms` entries for regional forms
-(Alolan/Galarian/Hisuian/Paldean) and for regular forms of Pokémon that are only in the
-game in a regional form. It never touches `notes` or other `notForms` entries (like
+What it updates: `species`, `megas`, and the `notForms` entries for every (non-Mega) form
+of Pokémon that have regional variants (Alolan/Galarian/Hisuian/Paldean), e.g. all four
+Darmanitan forms. It never touches `notes` or `notForms` entries for other Pokémon (like
 Ash's Greninja); those stay hand-edited.
 
 Exit codes: 0 = no differences (or written), 1 = differences found (report only),
@@ -198,8 +198,9 @@ def main():
         fail(f'{len(bad_megas)} of {len(s_megas)} Mega names on the page don\'t match data/pokemon.js '
              f'(e.g. {", ".join(bad_megas[:3])}); the page format has probably changed')
     s_megas -= set(bad_megas)
-    if bad_megas:
-        # Serebii may have just renamed some Megas, so don't remove any this time; the warning asks for a check.
+    # A Mega under an unknown sprite code or with an unmatched name may just have been renamed or recoded:
+    # don't remove any Megas this run; the warnings ask for a check.
+    if bad_megas or any('Mega' in text or '-m' in text for text in unknown):
         s_megas |= c_megas
     added = sorted(s_species - c_species)
     removed = sorted(c_species - s_species)
