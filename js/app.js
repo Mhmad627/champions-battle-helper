@@ -281,9 +281,22 @@ function clearFocus(){ focused = null; g.classList.remove('hovering'); cells.for
 g.addEventListener('mouseover', e => { const c = e.target.closest('.cell,.combo'); if (c) focusCell(c) });
 g.addEventListener('mouseleave', clearFocus);
 g.addEventListener('click', e => {
-  const b = e.target.closest('.ch,.rh'); if (b){ toggleType(b.dataset.t); $('readout').innerHTML = sel.length ? `Now showing ${sel.map(t => chip(t)).join(' ')} in the last column and in the lookup at the top.` : 'Selection cleared.'; return }
+  const b = e.target.closest('.ch,.rh'); if (b){
+    toggleType(b.dataset.t);
+    $('readout').innerHTML = sel.length ? `Now showing ${sel.map(t => chip(t)).join(' ')} in the last column and in the lookup at the top.` : 'Selection cleared.';
+    centerChart();
+    return }
   const c = e.target.closest('.cell,.combo'); if (c) focusCell(c);
 });
+// Picking a type from the chart changes the lookup at the top of the page, which pushes the chart
+// up or down. Instead, centre the chart (axis label to readout) in the visible area, between the
+// sticky header and the phone tab bar.
+function centerChart(){
+  const top = document.querySelector('.top')?.getBoundingClientRect().bottom || 0;
+  const bar = $('tabbar'), barH = bar && getComputedStyle(bar).display !== 'none' ? bar.offsetHeight : 0;
+  const a = g.closest('.chart-inner').getBoundingClientRect().top, z = $('readout').getBoundingClientRect().bottom;
+  scrollBy({ top: (a + z) / 2 - (top + (innerHeight - barH - top) / 2), behavior: 'instant' });
+}
 function showReadout(atk, defs){
   const el = $('readout');
   if (!atk){ el.innerHTML = 'Hover or tap a square to read it.'; return }
