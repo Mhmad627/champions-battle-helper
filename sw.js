@@ -1,8 +1,9 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v14';
-// Pokémon icons are cached as they're seen, in a cache that isn't wiped on each deploy (they rarely change).
-const IMG = 'cbh-icons';
+const VERSION = 'cbh-v15';
+// Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
+// fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
+const IMG = 'cbh-icons-4aef74df';
 const TYPES = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
 const FILES = [
   './', 'index.html', 'about.html', 'manifest.webmanifest',
@@ -19,7 +20,7 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== IMG).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== IMG).map(k => caches.delete(k))))  // also drops old icon caches
     .then(() => self.clients.claim()));
 });
 
