@@ -1,5 +1,5 @@
 'use strict';
-/* Type Cheat Sheet — app logic. Data lives in js/data.js and data/*.js */
+/* Champions Battle Helper — app logic. Data lives in js/data.js and data/*.js */
 
 const $ = id => document.getElementById(id);
 const T = TYPES;
@@ -27,6 +27,8 @@ const WORD = x => x === 0 ? 'No effect' : x > 1 ? 'Super effective' : x < 1 ? 'N
 
 /* ---------- Data ---------- */
 const MON = window.POKEMON.map(([name, no, types, abil, hidden, key], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-') }));
+const CH_SPECIES = new Set((window.CHAMPIONS || {}).species || []), CH_MEGAS = new Set((window.CHAMPIONS || {}).megas || []);
+MON.forEach(m => m.champ = m.name.startsWith('Mega ') ? CH_MEGAS.has(m.name) : CH_SPECIES.has(m.no));
 const BY_SLUG = new Map(MON.map(m => [m.slug, m]));
 const AB = window.ABILITIES.map(([name, gen, desc, sum]) => ({ name, gen, desc, sum }));
 const AB_BY = new Map(AB.map(a => [a.name, a]));
@@ -95,7 +97,7 @@ function renderSug(){
   sugItems = search(v); sugActive = sugItems.length ? 0 : -1;
   sug.innerHTML = sugItems.length ? sugItems.map((r, k) => r.kind === 'type'
     ? `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${icon(r.t, 24)}</span><span class="nm">${r.t}</span><span class="kind">type</span></li>`
-    : `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span><span class="no">#${r.m.no}</span></li>`).join('')
+    : `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${r.m.champ ? '' : '<span class="nic">Not in Champions</span>'}<span class="no">#${r.m.no}</span></li>`).join('')
     : `<li class="empty">No Pokémon or type called “${esc(v.trim())}”. Check the spelling?</li>`;
   sug.hidden = false; q.setAttribute('aria-expanded', 'true');
   markActive();
@@ -201,7 +203,7 @@ function renderPlan(){
   const abs = abilitiesOf(mon);
 
   let h = `<div class="plan-head"><div>
-      ${mon ? `<span class="plan-no">#${String(mon.no).padStart(4, '0')}</span>` : ''}
+      ${mon ? `<span class="plan-no">#${String(mon.no).padStart(4, '0')}${mon.champ ? '' : '<span class="nic">Not in Pokémon Champions yet</span>'}</span>` : ''}
       <h2 class="plan-name" tabindex="-1">${esc(name)}</h2>
       <div class="plan-types">${sel.map(t => chip(t, 'lg')).join('')}</div>
     </div>
@@ -234,7 +236,7 @@ function renderPlan(){
   h += `<details class="more"><summary>Normal damage (1×) from ${neutral.length} types</summary>${tiles(neutral, 'small')}</details>`;
 
   const same = MON.filter(m => sameTypes(m.types, sel) && m !== mon);
-  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}">${esc(m.name)}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
+  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}"${m.champ ? '' : ' class="out" title="Not in Pokémon Champions yet"'}>${esc(m.name)}${m.champ ? '' : '<span class="sr"> (not in Champions yet)</span>'}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
   el.innerHTML = h;
 }
 
@@ -529,7 +531,7 @@ function render(){
   if (push && url !== location.hash) history.pushState(null, '', url); else history.replaceState(null, '', url);
   push = false;
   announce();
-  document.title = mon ? `${mon.name} weaknesses and counters · Type Cheat Sheet` : 'Type Cheat Sheet: what beats any Pokémon';
+  document.title = mon ? `${mon.name} weaknesses and counters · Champions Battle Helper` : 'Champions Battle Helper: what beats any Pokémon';
 }
 function fromHash(){
   let h = ''; try { h = decodeURIComponent(location.hash.slice(1)) } catch {}
@@ -546,3 +548,6 @@ fromHash();
 renderAbilities();
 render();
 updateNav();
+
+/* ---------- Offline / install ---------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

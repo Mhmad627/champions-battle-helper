@@ -90,6 +90,9 @@ button.chip:hover{background:color-mix(in srgb,var(--tc) 34%,var(--panel))}
 .plan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .plan-name:focus{outline:none}
 .plan-name{margin:0;font-size:clamp(36px,5.4vw,58px);line-height:1;font-weight:800;font-stretch:78%;letter-spacing:-.02em;overflow-wrap:anywhere}
+.nic{display:inline-block;margin-left:10px;padding:1px 9px;border-radius:999px;font-size:12.5px;font-weight:650;color:var(--muted);border:1px solid var(--line);vertical-align:1px;font-variant-numeric:normal}
+.sug .nic{margin-left:0;white-space:nowrap}
+.same button.out{opacity:.6;border-style:dashed}
 .plan-no{display:block;font-size:15px;font-weight:600;color:var(--faint);margin-bottom:4px;font-variant-numeric:tabular-nums}
 .plan-types{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .mode{display:inline-flex;padding:4px;border-radius:14px;background:var(--bg-2);border:1px solid var(--line)}
@@ -261,6 +264,15 @@ mark{background:color-mix(in srgb,var(--focus) 38%,transparent);color:inherit;bo
 .xcard{padding:16px;border-radius:18px;background:var(--panel);border:1px solid var(--line);font-size:15px}
 .xcard h4{margin:0 0 4px;font-size:16px;font-weight:700}
 .xcard p{margin:0;color:var(--muted)}
+
+/* ---------- About page ---------- */
+.prose{max-width:720px;padding-top:36px;padding-bottom:20px}
+.prose h1{margin:0 0 14px;font-size:clamp(36px,6vw,56px);font-weight:800;font-stretch:80%;letter-spacing:-.02em;line-height:1}
+.prose h2{margin:34px 0 8px;font-size:24px;font-weight:750;font-stretch:88%}
+.prose p,.prose li{font-size:17px;line-height:1.6;color:var(--muted)}
+.prose b{color:var(--text)}
+.prose a{color:var(--text)}
+.top .btn{text-decoration:none;color:var(--text)}
 
 /* ---------- Footer ---------- */
 footer{margin:64px 0 0;padding:28px 0 40px;border-top:1px solid var(--line);color:var(--faint);font-size:14px}
