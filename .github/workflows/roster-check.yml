@@ -23,10 +23,16 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Exit codes: 0 fine, 2 page unreadable (nothing changed), 3 something to check by hand.
       - name: Compare with Serebii
-        run: python tools/check_roster.py --write --summary "$RUNNER_TEMP/roster-changes.md"
+        id: check
+        run: |
+          code=0
+          python tools/check_roster.py --write --summary "$RUNNER_TEMP/roster-changes.md" || code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
 
       - name: Open a pull request if the roster changed
+        if: steps.check.outputs.code == '0' || steps.check.outputs.code == '3'
         uses: peter-evans/create-pull-request@v7
         with:
           branch: roster-update
@@ -37,3 +43,10 @@ jobs:
           commit-message: Update Champions roster from Serebii
           title: Champions roster update
           body-path: ${{ runner.temp }}/roster-changes.md
+
+      # Fail the run (GitHub emails you) if the page couldn't be read or something needs checking by hand.
+      - name: Report problems
+        if: steps.check.outputs.code != '0'
+        run: |
+          echo "The roster check needs attention (exit code ${{ steps.check.outputs.code }}). See the 'Compare with Serebii' step above."
+          exit 1

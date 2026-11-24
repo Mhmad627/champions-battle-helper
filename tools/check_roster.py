@@ -4,12 +4,15 @@
     python tools/check_roster.py --write          # also update data/champions.js and bump sw.js VERSION
     python tools/check_roster.py --file page.html # use a saved copy of the page instead of downloading
 
-What it updates: `species`, `megas` and the regional-form entries in `notForms`
-(Alolan/Galarian/Hisuian/Paldean). It never touches `notes` or other `notForms`
-entries (like Ash's Greninja); those stay hand-edited.
+What it updates: `species`, `megas`, and the `notForms` entries for regional forms
+(Alolan/Galarian/Hisuian/Paldean) and for regular forms of Pokémon that are only in the
+game in a regional form. It never touches `notes` or other `notForms` entries (like
+Ash's Greninja); those stay hand-edited.
 
 Exit codes: 0 = no differences (or written), 1 = differences found (report only),
-2 = the page couldn't be read or looked wrong, so nothing was changed.
+2 = the page couldn't be read or looked wrong, so nothing was changed,
+3 = something needs checking by hand (listed under "Check by hand"); with --write,
+    any other changes were still written.
 Standard library only, so it runs in GitHub Actions without installing anything.
 """
 import argparse
@@ -30,6 +33,15 @@ REGIONAL = {'a': 'Alolan', 'g': 'Galarian', 'h': 'Hisuian', 'p': 'Paldean'}
 MEGA_SUFFIX = {'m': '', 'mx': ' X', 'my': ' Y', 'mz': ' Z'}
 # Sprite suffixes for forms that aren't separate entries on the site (e.g. 'e' = Eternal Flower Floette).
 IGNORED_SUFFIXES = {'e'}
+
+# Hand-edited. Use these to settle "Check by hand" warnings so they stop coming back:
+# Serebii's name for a Mega -> the name in data/pokemon.js, when the two differ.
+MEGA_ALIASES = {
+    # 'Mega Example': 'Mega Example Form',
+}
+# Form sprites ("dex-suffix") you've already checked and that need no change on the site,
+# e.g. '479-h' if Serebii adds Heat Rotom (every Rotom form already counts once Rotom is listed).
+KNOWN_FORMS = set()
 SPRITE = re.compile(r'/pokemonhome/pokemon/small/(\d+)(?:-([a-z0-9]+))?\.png"[^>]*?alt="([^"]*?) Image"')
 
 
@@ -60,26 +72,27 @@ def parse_serebii(page, mons):
     # '-h' is Hisuian, but also Heat Rotom). So a suffix only counts as a Mega when the name says "Mega",
     # and as a regional form only when the site really has that regional form. Anything else is flagged.
     site_regional = {(no, p) for n, no in mons for p in REGIONAL.values() if n.startswith(p + ' ')}
-    species, megas, regional, unknown = set(), set(), set(), set()
+    species, plain, megas, regional, unknown = set(), set(), set(), set(), set()
     for no, suf, alt in SPRITE.findall(page):
-        no, alt = int(no), html.unescape(alt)
-        if not suf:
+        no, alt = int(no), html.unescape(alt).strip()
+        if not suf or suf in IGNORED_SUFFIXES:
             species.add(no)
+            plain.add(no)  # the regular form is listed
         elif suf in MEGA_SUFFIX and alt.startswith('Mega '):
-            megas.add(alt + MEGA_SUFFIX[suf])
+            name = alt if alt.endswith(MEGA_SUFFIX[suf]) else alt + MEGA_SUFFIX[suf]
+            megas.add(MEGA_ALIASES.get(name, name))
         elif suf in REGIONAL and (no, REGIONAL[suf]) in site_regional:
             # Covers every form with that prefix, e.g. all three Paldean Tauros breeds share one sprite.
             species.add(no)
             regional.add((no, REGIONAL[suf]))
-        elif suf in IGNORED_SUFFIXES:
-            species.add(no)
         else:
             species.add(no)
-            unknown.add(f'{alt} #{no} (sprite suffix "-{suf}")')
+            if f'{no}-{suf}' not in KNOWN_FORMS:
+                unknown.add(f'{alt} #{no} (sprite "{no}-{suf}")')
     # Sanity checks: if the page layout changed, don't wipe the roster.
     if len(species) < 100 or len(megas) < 10:
         fail(f'only found {len(species)} Pokémon and {len(megas)} Megas on the page; its layout has probably changed')
-    return species, megas, regional, unknown
+    return species, plain, megas, regional, unknown
 
 
 def site_pokemon():
@@ -130,22 +143,33 @@ def main():
     args = ap.parse_args()
 
     mons = site_pokemon()
-    s_species, s_megas, s_regional, unknown = parse_serebii(fetch(args.file), mons)
+    s_species, s_plain, s_megas, s_regional, unknown = parse_serebii(fetch(args.file), mons)
     site_names = {n for n, _ in mons}
     text, c_species, c_megas, c_not = read_champions()
     name_of = {}
     for n, no in mons:
         name_of.setdefault(no, n)
 
-    # Regional forms on the site that Serebii doesn't list go in notForms.
-    want_regional_not = sorted(
-        n for n, no in mons
-        if no in s_species and any(n.startswith(p + ' ') for p in REGIONAL.values())
-        and not any(no == rno and n.startswith(p + ' ') for rno, p in s_regional)
-    )
-    keep_not = [n for n in c_not if not any(n.startswith(p + ' ') for p in REGIONAL.values())]
-    new_not = keep_not + want_regional_not
-    cur_regional_not = sorted(n for n in c_not if n not in keep_not)
+    # notForms entries this script manages: regional forms, and the regular form of each Pokémon.
+    # A regional form Serebii doesn't list, or a regular form when Serebii only lists a regional
+    # one (e.g. only Hisuian Typhlosion), goes in notForms. Other entries are left alone.
+    def prefix(n):
+        return next((p for p in REGIONAL.values() if n.startswith(p + ' ')), None)
+    regular = set(name_of.values())
+    managed = regular | {n for n, _ in mons if prefix(n)}
+    want_not = set()
+    for n, no in mons:
+        if no not in s_species:
+            continue
+        if prefix(n):
+            if (no, prefix(n)) not in s_regional:
+                want_not.add(n)
+        elif n in regular and no not in s_plain:
+            want_not.add(n)
+    # Keep the existing order; drop entries that no longer apply and add new ones at the end.
+    new_not = [n for n in c_not if n not in managed or n in want_not] + sorted(want_not - set(c_not))
+    forms_now_in = sorted(n for n in c_not if n in managed and n not in want_not)
+    forms_now_out = sorted(want_not - set(c_not))
 
     bad_megas = sorted(m for m in s_megas if m not in site_names)
     # If most Mega names don't match the site, Serebii probably changed how it writes them: stop rather
@@ -158,8 +182,6 @@ def main():
     removed = sorted(c_species - s_species)
     megas_added = sorted(s_megas - c_megas)
     megas_removed = sorted(c_megas - s_megas)
-    forms_now_in = sorted(set(cur_regional_not) - set(want_regional_not))
-    forms_now_out = sorted(set(want_regional_not) - set(cur_regional_not))
 
     report = []
     def section(title, items):
@@ -169,16 +191,17 @@ def main():
     section('Pokémon removed', [f'{name_of.get(n, "?")} (#{n})' for n in removed])
     section('Megas added', megas_added)
     section('Megas removed', megas_removed)
-    section('Regional forms now available', forms_now_in)
-    section('Regional forms not available', forms_now_out)
+    section('Forms now available', forms_now_in)
+    section('Forms not available', forms_now_out)
     warnings = []
     if bad_megas:
-        warnings.append('These Megas on Serebii have no matching name in data/pokemon.js, so they were left out. '
-                        'Add them to data/champions.js by hand under the site\'s name, or re-run tools/build_data.py if they are new: '
-                        + ', '.join(bad_megas))
+        warnings.append('These Megas on Serebii have no matching name in data/pokemon.js, so they were left out: '
+                        + ', '.join(bad_megas) + '. If they are new, re-run tools/build_data.py. If the site just names '
+                        'them differently, add them to MEGA_ALIASES in tools/check_roster.py.')
     if unknown:
-        warnings.append('These forms use a sprite suffix the script doesn\'t know, so only the Pokémon itself was counted, not the form. Check them by hand: '
-                        + ', '.join(sorted(unknown)))
+        warnings.append('These forms use a sprite code the script doesn\'t know, so only the Pokémon itself was counted: '
+                        + ', '.join(sorted(unknown)) + '. Check them, fix data/champions.js by hand if needed '
+                        '(e.g. add to notForms), then add the codes to KNOWN_FORMS in tools/check_roster.py.')
     changed = bool(report)
 
     summary = ('Serebii\'s Champions list differs from `data/champions.js`.\n\n' + '\n\n'.join(report)
@@ -190,10 +213,11 @@ def main():
     if args.summary:
         Path(args.summary).write_text(summary + '\n', encoding='utf-8')
 
+    status = 3 if warnings else 0
     if not changed:
-        return 0
+        return status
     if not args.write:
-        return 1
+        return status or 1
 
     today = datetime.date.today().isoformat()
     text = re.sub(r'(pokemon\.shtml\), read )\d{4}-\d{2}-\d{2}', rf'\g<1>{today}', text)
@@ -210,7 +234,7 @@ def main():
     sw = re.sub(r"const VERSION = 'cbh-v(\d+)';", lambda v: f"const VERSION = 'cbh-v{int(v.group(1)) + 1}';", sw, count=1)
     SW.write_text(sw, encoding='utf-8', newline='')
     print('\nUpdated data/champions.js and bumped VERSION in sw.js.')
-    return 0
+    return status
 
 
 if __name__ == '__main__':
