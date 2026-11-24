@@ -76,8 +76,8 @@ const ABILITY_DEF = {
 const SVG_WEATHER = {
   sun:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="16" cy="16" r="6" fill="currentColor"/><path d="M16 3v3M16 26v3M3 16h3M26 16h3M6.8 6.8l2.1 2.1M23.1 23.1l2.1 2.1M6.8 25.2l2.1-2.1M23.1 8.9l2.1-2.1"/></svg>',
   rain:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19a6 6 0 1 1 2.2-11.6A7 7 0 0 1 24.6 11 4.5 4.5 0 0 1 23.5 19z" fill="currentColor" fill-opacity=".25"/><path d="M11 23l-1.5 4M17 23l-1.5 4M23 23l-1.5 4"/></svg>',
-  sand:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 10h17a3.5 3.5 0 1 0-3.5-3.5M4 16h22a3.5 3.5 0 1 1-3.5 3.5M4 22h12"/><circle cx="22" cy="26" r="1.3" fill="currentColor"/><circle cx="27" cy="12" r="1.3" fill="currentColor"/></svg>',
-  snow:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16 3v26M4.7 9.5l22.6 13M4.7 22.5l22.6-13M12.5 5.5L16 9l3.5-3.5M12.5 26.5L16 23l3.5 3.5"/></svg>'
+  sand:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 11h15a3.5 3.5 0 1 0-3.5-3.5M3 17h20a3.5 3.5 0 1 1-3.5 3.5M3 23h9"/><g fill="currentColor" stroke="none"><circle cx="24" cy="10" r="1.6"/><circle cx="28.5" cy="13.5" r="1.2"/><circle cx="17" cy="27" r="1.5"/><circle cx="12" cy="28.5" r="1"/><circle cx="27.5" cy="25.5" r="1.1"/><circle cx="7" cy="27" r="1.2"/></g></svg>',
+  snow:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16 29L16 3M16 8.8L12.7 5.5M16 8.8L19.3 5.5M27.3 22.5L4.7 9.5M9.8 12.4L5.3 13.6M9.8 12.4L8.6 8M27.3 9.5L4.7 22.5M9.8 19.6L8.6 24M9.8 19.6L5.3 18.4M16 23.2L19.3 26.5M16 23.2L12.7 26.5M22.2 19.6L26.7 18.4M22.2 19.6L23.4 24M22.2 12.4L23.4 8M22.2 12.4L26.7 13.6"/></svg>'
 };
 
 const WEATHER = [
