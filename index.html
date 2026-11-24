@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Type Cheat Sheet: what beats any Pokémon</title>
+<meta name="description" content="Type any Pokémon and see which moves hit it hardest. Type chart, abilities, weather and terrain explained for beginners.">
+<meta name="theme-color" content="#1A2140">
+<link rel="preload" href="assets/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('tcs-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')}catch(e){}</script>
+</head>
+<body>
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="#sec-match" aria-label="Type Cheat Sheet, back to top">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M2.5 16h9M20.5 16h9" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="4.5" fill="var(--focus)" stroke="currentColor" stroke-width="3"/></svg>
+      Type Cheat Sheet
+    </a>
+    <ul class="secnav" id="secnav">
+      <li><a href="#sec-match">Look up</a></li>
+      <li><a href="#sec-chart">Type chart</a></li>
+      <li><a href="#sec-abilities">Abilities</a></li>
+      <li><a href="#sec-field">Weather &amp; terrain</a></li>
+    </ul>
+    <button class="icon-btn" id="theme" aria-label="Switch between light and dark mode" title="Light / dark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="anchor" id="sec-match" aria-labelledby="h-hero">
+    <div class="hero">
+      <h1 id="h-hero">Who are you fighting?</h1>
+      <p class="lede">Type a Pokémon's name to see which moves hit it hardest, and which ones to skip.</p>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Garchomp, Gengar, Pikachu…" autocomplete="off" autocapitalize="off" spellcheck="false"
+               role="combobox" aria-expanded="false" aria-controls="sug" aria-autocomplete="list" aria-label="Search for a Pokémon or a type">
+        <button class="q-clear" id="qClear" aria-label="Clear search" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <ul class="sug" id="sug" role="listbox" aria-label="Suggestions" hidden></ul>
+      </div>
+      <div class="recent" id="recent"></div>
+    </div>
+
+    <div class="lookup-grid">
+      <article class="plan" id="plan"></article>
+      <p class="sr" id="announce" aria-live="polite"></p>
+      <aside class="manual" aria-labelledby="h-manual">
+        <h2 id="h-manual">Or pick types yourself</h2>
+        <p>Choose one or two types. Picking a third swaps out the oldest.</p>
+        <div class="types" id="types" role="group" aria-label="Types"></div>
+        <div class="actions">
+          <button class="btn wide" id="rankBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg>Best &amp; worst types</button>
+          <button class="btn" id="rand" title="Random Pokémon (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>Random</button>
+          <button class="btn" id="clear">Clear</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section anchor" id="sec-chart" aria-labelledby="h-chart">
+    <h2 id="h-chart">The full type chart</h2>
+    <p class="sub">Each row is a move type, each column is the Pokémon being hit. Tap any square to see what it means. The last column shows whatever you looked up above.</p>
+    <div class="card">
+      <div class="legend">
+        <span><i class="l2">2</i><button class="term" data-term="super effective">Super effective</button></span>
+        <span><i class="lh">½</i><button class="term" data-term="not very effective">Not very effective</button></span>
+        <span><i class="l0">0</i><button class="term" data-term="immune">No effect</button></span>
+        <span>Blank: normal damage</span>
+      </div>
+      <div class="scroller">
+        <div class="chart-inner">
+          <div class="axis-top">Pokémon being hit →<span class="swipe"> swipe to see all</span></div>
+          <div class="grid" id="grid"></div>
+        </div>
+      </div>
+      <div class="readout" id="readout" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="section anchor" id="sec-abilities" aria-labelledby="h-ab">
+    <h2 id="h-ab">Abilities</h2>
+    <p class="sub">Every Pokémon has an ability that works in the background. Search one by name, or by what it does, like "sunlight" or "Ground".</p>
+    <div class="card">
+      <div class="ab-tools">
+        <label class="field-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="abQ" type="search" placeholder="Search abilities" autocomplete="off" spellcheck="false" aria-label="Search abilities"></label>
+        <select class="select" id="abGen" aria-label="Generation">
+          <option value="0">All generations</option>
+          <option value="3">Gen III</option><option value="4">Gen IV</option><option value="5">Gen V</option>
+          <option value="6">Gen VI</option><option value="7">Gen VII</option><option value="8">Gen VIII</option><option value="9">Gen IX</option>
+        </select>
+      </div>
+      <div class="filters" id="abF" role="group" aria-label="Filter abilities">
+        <button class="fchip" data-f="all" aria-pressed="true">All</button>
+        <button class="fchip" data-f="match" aria-pressed="false">Changes type matchups</button>
+        <button class="fchip" data-f="weather" aria-pressed="false">Weather</button>
+        <button class="fchip" data-f="terrain" aria-pressed="false">Terrain</button>
+      </div>
+      <p class="ab-count" id="abCount" aria-live="polite"></p>
+      <div class="ab-list" id="abList"></div>
+    </div>
+  </section>
+
+  <section class="section anchor" id="sec-field" aria-labelledby="h-field">
+    <h2 id="h-field">Weather &amp; terrain</h2>
+    <p class="sub">Some moves and abilities change the battlefield for a few turns. Cards that help the Pokémon you looked up are marked.</p>
+    <h3 class="fgroup-h">Weather<small>Lasts 5 turns, or 8 if the Pokémon holds the matching rock.</small></h3>
+    <div class="fgrid" id="weatherGrid"></div>
+    <h3 class="fgroup-h">Extreme weather<small>Only from Primal Groudon, Primal Kyogre and Mega Rayquaza. It can't be replaced by normal weather.</small></h3>
+    <div class="xgrid" id="xGrid"></div>
+    <h3 class="fgroup-h">Terrain<small>Lasts 5 turns, or 8 with a Terrain Extender.</small></h3>
+    <div class="fgrid" id="terrainGrid"></div>
+    <p class="fnote">Terrain only affects <button class="term" data-term="grounded">grounded</button> Pokémon. Only one terrain can be up at a time, and a new one replaces the old. The type boost was 1.5× in Gen VII and has been 1.3× since Gen VIII.</p>
+  </section>
+
+  <footer>
+    <p>Type Cheat Sheet is an unofficial fan site and isn't affiliated with Nintendo, Game Freak or The Pokémon Company. Pokémon and its type icons are trademarks of their respective owners.</p>
+    <p>Pokémon and ability data from <a href="https://pokeapi.co" rel="noopener">PokéAPI</a>. Type matchups follow Generation VI and later.</p>
+    <p>Keyboard: <b>/</b> search, <b>R</b> random Pokémon, <b>B</b> best &amp; worst types, <b>Esc</b> close pop-ups.</p>
+  </footer>
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Sections">
+  <a href="#sec-match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Look up</a>
+  <a href="#sec-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17M15 3.5v17"/></svg>Chart</a>
+  <a href="#sec-abilities"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Abilities</a>
+  <a href="#sec-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="4"/><path d="M9 1.5v1.5M2.5 9H1M3.8 3.8l1 1M14.2 3.8l-1 1"/><path d="M8 20h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.4 1.5A3.3 3.3 0 0 0 8 20z" fill="var(--panel)"/></svg>Weather</a>
+</nav>
+
+<dialog class="rank" id="rank" aria-labelledby="rankTitle">
+  <div class="rank-top">
+    <div class="rank-title">
+      <h2 id="rankTitle">Best &amp; worst types</h2>
+      <button class="icon-btn" id="rankClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="tabs" role="group" aria-label="Ranking">
+      <button class="tab" data-tab="best" aria-pressed="true">Toughest</button>
+      <button class="tab" data-tab="worst" aria-pressed="false">Most fragile</button>
+      <button class="tab" data-tab="off" aria-pressed="false">Best attackers</button>
+    </div>
+    <p class="rank-note" id="rankNote"></p>
+    <label class="rank-opts"><input type="checkbox" id="rankSingles" checked> Include single types</label>
+  </div>
+  <ol class="rank-list" id="rankList"></ol>
+</dialog>
+
+<div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="popTitle" hidden></div>
+
+<script src="data/pokemon.js"></script>
+<script src="data/abilities.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
