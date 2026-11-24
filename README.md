@@ -2,40 +2,60 @@
 
 A fast, beginner-friendly battle helper for **Pokémon Champions**. Type the name of the Pokémon you're fighting and it shows which move types hit it hardest, which to avoid, and which abilities could change the result.
 
+It's made for phones, so you can check a matchup mid-battle without memorising the type chart.
+
 ## Features
 
-- **Pokémon lookup:** search all 1,230 Pokémon and forms (regional forms and Megas included). Typos are fine. Pokémon that aren't in Champions yet are still listed, marked "Not in Champions".
-- **Battle plan:** "Hit it with" and "Don't bother with" lists, with tap-to-explain maths for each matchup.
-- **Two views:** *I'm fighting it* (what beats it) and *I'm using it* (what to watch out for, and what its own moves are strong against).
-- **Ability-aware:** abilities like Levitate, Flash Fire or Thick Fat are applied or flagged as "might have".
-- **Pick types yourself:** choose any one or two types, and see every Pokémon with that typing.
-- **Full type chart:** 18×18 chart with tap-to-explain squares and a column for the current lookup.
-- **Best and worst types:** rankings of the toughest and most fragile typings and the best attacking pairs.
+- **Pokémon lookup:** search all 1,230 Pokémon and forms, including regional forms and Megas. Typos are fine.
+- **Champions roster:** Pokémon and forms that aren't in Champions are still listed, marked "Not in Champions". Special cases get a short note (for example, Floette is only allowed in its Eternal Flower form).
+- **Battle plan:** "Hit it with" and "Don't bother with" lists. Tap any matchup to see the maths behind it.
+- **Two views:** *I'm fighting it* shows what beats it. *I'm using it* shows what to watch out for and what its own moves are strong against.
+- **Ability-aware:** abilities like Levitate, Flash Fire or Thick Fat are applied, or flagged as "might have" when the Pokémon has more than one possible ability.
+- **Pick types yourself:** choose any one or two types and see every Pokémon with that typing.
+- **Full type chart:** 18×18 chart with tap-to-explain squares.
+- **Best and worst types:** the toughest and most fragile typings, and the best attacking pairs.
 - **Abilities:** searchable list of all 314 abilities, with filters for matchups, weather and terrain.
 - **Weather and terrain:** what each one does, with related abilities.
 - **Beginner glossary:** tap terms like STAB, "grounded" or "super effective" for a short explanation.
-- **Works offline and installs like an app** (add it to your home screen) once it's served over HTTPS.
-- Light and dark themes, phone-first layout, and keyboard shortcuts: `/` search, `R` random Pokémon, `B` best and worst types.
+- **Works offline and installs like an app** (add it to your home screen) when served over HTTPS.
+- Light and dark themes, and keyboard shortcuts: `/` search, `R` random Pokémon, `B` best and worst types.
 
-## Running it
+Type matchups follow the current rules (Generation VI and later). Weather, terrain and abilities follow Generation IX.
 
-It's a static site with no build step.
+## Running it locally
+
+It's a static site with no build step and no dependencies.
 
 - Quick look: open `index.html` in a browser.
-- Offline and install support need a real web server (service workers don't run from `file://`). For local testing: `python -m http.server`, then open http://localhost:8000.
-- To publish, upload the folder to any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages).
+- Offline and install support need a web server, because service workers don't run from `file://`:
+  ```sh
+  python -m http.server
+  ```
+  Then open http://localhost:8000.
 
-When you deploy changes, bump `VERSION` in `sw.js` so phones that have the site cached pick up the new files.
+To host it, upload the folder to any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages). When you deploy changes, bump `VERSION` in `sw.js` so phones that have the site saved pick up the new files.
 
 ## Updating the data
 
-- **Pokémon and abilities** (`data/pokemon.js`, `data/abilities.js`) are generated from [PokéAPI](https://pokeapi.co)'s public CSV tables:
+- **Pokémon and abilities** (`data/pokemon.js`, `data/abilities.js`) are generated from [PokéAPI](https://pokeapi.co)'s public data. Don't edit them by hand; change `tools/build_data.py` and re-run it:
   ```sh
-  python tools/build_data.py            # download the latest tables and rebuild
-  python tools/build_data.py --offline  # rebuild from the cached tables in tools/.cache
+  python tools/build_data.py            # download the latest data and rebuild
+  python tools/build_data.py --offline  # rebuild from the cached download in tools/.cache
   ```
-- **Champions roster** (`data/champions.js`) is edited by hand: a list of National Dex numbers plus the Mega Evolutions that are available.
-- **Icons and the link preview image** (`assets/icons/`, `assets/og-image.png`): `python tools/make_icons.py`.
+- **Champions roster** (`data/champions.js`) is edited by hand. It has:
+  - `species`: National Dex numbers of the Pokémon in the game
+  - `megas`: the Mega Evolutions in the game
+  - `notForms`: forms of those Pokémon that aren't in the game (like Galarian Farfetch'd)
+  - `notes`: short notes shown under a Pokémon's name
+
+  A GitHub Action (`.github/workflows/roster-check.yml`) compares this file with [Serebii's list](https://www.serebii.net/pokemonchampions/pokemon.shtml) every Monday. If anything changed, it opens a pull request listing what was added or removed. `notes` are never changed automatically. You can run the same check yourself:
+  ```sh
+  python tools/check_roster.py           # show differences
+  python tools/check_roster.py --write   # update data/champions.js and bump the sw.js VERSION
+  ```
+- **App icons and the link preview image** (`assets/icons/`, `assets/og-image.png`) are made with `python tools/make_icons.py` (needs Pillow).
+
+The data files are plain JavaScript rather than JSON so the site still works when `index.html` is opened straight from disk.
 
 ## Project layout
 
@@ -44,20 +64,24 @@ index.html            the helper
 about.html            about and privacy
 manifest.webmanifest  install info (name, icons, colours)
 sw.js                 offline cache
-robots.txt
 css/style.css         all styles (dark and light themes)
 js/data.js            type chart, glossary, ability effects, weather and terrain
 js/app.js             search, battle plan, chart, abilities, rankings, navigation
 data/                 generated Pokémon and ability data, hand-edited Champions roster
-assets/types/         type icons (WebP)
+assets/types/         type icons
 assets/icons/         app icons and favicon
-assets/fonts/         Bricolage Grotesque (SIL Open Font License)
-tools/                data and icon generators
+assets/fonts/         Bricolage Grotesque
+tools/                data and icon generators, weekly roster check
+.github/workflows/    the weekly roster check
 ```
 
-## Before launch
+## Found a mistake?
 
-Once the site has a domain, make the `og:image` URL in `index.html` absolute (link previews need a full URL), and add a sitemap line to `robots.txt`.
+If the roster, a matchup or an ability is wrong, please [open an issue](../../issues). Game updates can change things before this site catches up.
+
+## Privacy
+
+No accounts, cookies, analytics or ads, and nothing you type leaves your device. The site only saves your theme choice and your last six lookups in your browser's local storage. See `about.html` for details.
 
 ## Credits
 
@@ -65,4 +89,4 @@ Once the site has a domain, make the `og:image` URL in `index.html` absolute (li
 - Champions roster: based on [Serebii](https://www.serebii.net/pokemonchampions/pokemon.shtml).
 - Font: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque), SIL Open Font License.
 
-This is an unofficial fan project and isn't affiliated with Nintendo, Game Freak or The Pokémon Company. Pokémon, Pokémon Champions, the type names and the type icons are trademarks of their respective owners.
+This is an unofficial fan project and isn't affiliated with, endorsed by or sponsored by Nintendo, Game Freak, Creatures or The Pokémon Company. Pokémon, Pokémon Champions, the type names and the type icons are trademarks of their respective owners.

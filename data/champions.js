@@ -3,8 +3,10 @@
 // Pokémon not listed here still appear on the site, marked "Not in Champions yet".
 //
 // species: National Dex numbers. Every non-Mega form of a listed species counts as available
-//          (regional forms included).
-// megas:   Mega Evolutions are only available if named here (names must match data/pokemon.js).
+//          (regional forms included), except the forms named in notForms.
+// notes:   short availability notes shown under a Pokémon's name, keyed by name.
+// notForms: forms of listed species that aren't in the game (names must match data/pokemon.js).
+// megas:  Mega Evolutions are only available if named here (names must match data/pokemon.js).
 window.CHAMPIONS = {
   species: [
     3,6,9,15,18,24,25,26,36,38,40,45,53,59,65,68,71,80,83,94,115,121,122,127,128,130,132,134,135,136,142,143,149,
@@ -17,6 +19,11 @@ window.CHAMPIONS = {
     812,815,818,823,828,841,842,844,849,853,855,858,861,863,865,866,867,869,870,871,876,877,887,899,900,902,903,904,
     908,911,914,923,925,930,931,934,936,937,939,943,952,956,959,964,968,970,972,979,981,983,998,1000,1013,1018,1019
   ],
+  notes: {
+    'Floette': 'Only Eternal Flower Floette is allowed, and it must be transferred from Legends: Z-A through Pokémon HOME.',
+    'Mega Floette': 'Mega Evolves from Eternal Flower Floette, which must be transferred from Legends: Z-A through Pokémon HOME.'
+  },
+  notForms: ["Galarian Farfetch'd", 'Galarian Mr. Mime', 'Hisuian Qwilfish', "Ash's Greninja"],
   megas: [
     'Mega Venusaur','Mega Charizard X','Mega Charizard Y','Mega Blastoise','Mega Beedrill','Mega Pidgeot',
     'Mega Raichu X','Mega Raichu Y','Mega Clefable','Mega Alakazam','Mega Victreebel','Mega Slowbro','Mega Gengar',

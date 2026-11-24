@@ -1,0 +1,38 @@
+# Weekly check of the Champions roster against Serebii's list.
+# If anything changed, it opens (or updates) a pull request for you to review and merge.
+# If Serebii's page can't be read, the run fails and GitHub emails you; nothing is changed.
+name: Weekly roster check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Mondays 09:00 UTC
+  workflow_dispatch:       # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compare with Serebii
+        run: python tools/check_roster.py --write --summary "$RUNNER_TEMP/roster-changes.md"
+
+      - name: Open a pull request if the roster changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: roster-update
+          delete-branch: true
+          add-paths: |
+            data/champions.js
+            sw.js
+          commit-message: Update Champions roster from Serebii
+          title: Champions roster update
+          body-path: ${{ runner.temp }}/roster-changes.md

@@ -28,7 +28,8 @@ const WORD = x => x === 0 ? 'No effect' : x > 1 ? 'Super effective' : x < 1 ? 'N
 /* ---------- Data ---------- */
 const MON = window.POKEMON.map(([name, no, types, abil, hidden, key], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-') }));
 const CH_SPECIES = new Set((window.CHAMPIONS || {}).species || []), CH_MEGAS = new Set((window.CHAMPIONS || {}).megas || []);
-MON.forEach(m => m.champ = m.name.startsWith('Mega ') ? CH_MEGAS.has(m.name) : CH_SPECIES.has(m.no));
+const CH_NOT = new Set((window.CHAMPIONS || {}).notForms || []), CH_NOTES = (window.CHAMPIONS || {}).notes || {};
+MON.forEach(m => m.champ = m.name.startsWith('Mega ') ? CH_MEGAS.has(m.name) : CH_SPECIES.has(m.no) && !CH_NOT.has(m.name));
 const BY_SLUG = new Map(MON.map(m => [m.slug, m]));
 const AB = window.ABILITIES.map(([name, gen, desc, sum]) => ({ name, gen, desc, sum }));
 const AB_BY = new Map(AB.map(a => [a.name, a]));
@@ -206,6 +207,7 @@ function renderPlan(){
       ${mon ? `<span class="plan-no">#${String(mon.no).padStart(4, '0')}${mon.champ ? '' : '<span class="nic">Not in Pokémon Champions yet</span>'}</span>` : ''}
       <h2 class="plan-name" tabindex="-1">${esc(name)}</h2>
       <div class="plan-types">${sel.map(t => chip(t, 'lg')).join('')}</div>
+      ${mon && CH_NOTES[mon.name] ? `<p class="plan-note">${esc(CH_NOTES[mon.name])}</p>` : ''}
     </div>
     <div class="mode" role="group" aria-label="View">
       <button data-mode="fight" aria-pressed="${mode === 'fight'}">I'm fighting it</button>
