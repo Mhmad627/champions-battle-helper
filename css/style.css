@@ -473,6 +473,8 @@ dialog.rank::backdrop{background:rgba(8,10,25,.6);backdrop-filter:blur(3px)}
   .plan-id .team-add{grid-column:1/-1;grid-row:4;justify-self:start}
   .plan-id .plan-note{grid-column:1/-1;grid-row:5}
   .tslots{grid-template-columns:1fr}
+  .team-add{height:40px}
+  .tslot-name{min-height:40px}
   .tslot{min-height:48px}
   .trow{grid-template-columns:minmax(0,1fr) auto;padding:6px 10px 8px 6px}
   .trow-who{grid-column:1/-1;grid-row:2;padding-left:4px}

@@ -29,9 +29,10 @@ const WORD = x => x === 0 ? 'No effect' : x > 1 ? 'Super effective' : x < 1 ? 'N
 const SPR = new Set(window.SPRITES || []);
 const MON = window.POKEMON.map(([name, no, types, abil, hidden, key, pid], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-'), spr: SPR.has(pid) ? pid : 0 }));
 // Pokémon icon (PokéAPI sprite, see tools/get_sprites.py); empty when there's no sprite for that form.
-const monImg = (m, size, cls = '') => m && m.spr ? `<img class="mi ${cls}" src="assets/pokemon/${m.spr}.webp" alt="" width="${size}" height="${size}" loading="lazy" decoding="async">` : '';
-// Pokémon icon, or its type icons when there's no sprite.
-const monFace = (m, size, tsize) => m.spr ? monImg(m, size) : `<span class="ts">${m.types.map(t => icon(t, tsize || 22)).join('')}</span>`;
+// If the image can't load (e.g. offline and never seen before), it's removed, or swapped for type icons (monFace).
+const monImg = (m, size, cls = '', fallback = '') => m && m.spr ? `<img class="mi ${cls}" src="assets/pokemon/${m.spr}.webp" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" onerror="${fallback ? `this.outerHTML=this.dataset.fb" data-fb="${esc(fallback)}` : 'this.remove()'}">` : '';
+// Pokémon icon, or its type icons when there's no sprite (or it fails to load).
+const monFace = (m, size, tsize) => { const ts = `<span class="ts">${m.types.map(t => icon(t, tsize || 22)).join('')}</span>`; return m.spr ? monImg(m, size, '', ts) : ts };
 const CH_SPECIES = new Set((window.CHAMPIONS || {}).species || []), CH_MEGAS = new Set((window.CHAMPIONS || {}).megas || []);
 const CH_NOT = new Set((window.CHAMPIONS || {}).notForms || []), CH_NOTES = (window.CHAMPIONS || {}).notes || {};
 // Label for Pokémon and forms outside the roster. "Yet" because the roster changes with game updates.

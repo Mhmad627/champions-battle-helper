@@ -31,18 +31,24 @@ def fetch(pid):
     if '--offline' in sys.argv:
         return None
     req = urllib.request.Request(URL.format(pid), headers={'User-Agent': 'sprite-icon-builder'})
+    err = None
     for attempt in range(3):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
-                open(path, 'wb').write(r.read())
+                data = r.read()
+            tmp = path + '.part'                      # write then rename, so a dropped download never
+            open(tmp, 'wb').write(data)               # leaves a broken file in the cache
+            os.replace(tmp, path)
             return path
         except urllib.error.HTTPError as e:
-            if e.code == 404:
+            if e.code == 404:                         # PokéAPI has no sprite for this form
                 return None
-        except Exception:
-            pass
+            err = e
+        except Exception as e:
+            err = e
         time.sleep(1 + attempt)
-    return None
+    # Don't quietly drop the icon from data/sprites.js because of a network problem.
+    sys.exit(f'Could not download the sprite for {pid} ({err}). data/sprites.js was not updated; run it again.')
 
 
 have, missing = [], []
@@ -50,7 +56,11 @@ for n, pid in enumerate(ids, 1):
     path = fetch(pid)
     if not path:
         missing.append(pid); continue
-    im = Image.open(path).convert('RGBA')
+    try:
+        im = Image.open(path).convert('RGBA')
+    except Exception:
+        os.remove(path)                               # broken cache file: fetch it again next run
+        sys.exit(f'The cached sprite for {pid} was damaged and has been deleted. Run the script again.')
     box = im.getchannel('A').point(lambda a: 255 if a > 8 else 0).getbbox()
     if not box:
         missing.append(pid); continue
@@ -59,7 +69,7 @@ for n, pid in enumerate(ids, 1):
     sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
     sq.paste(im, ((side - im.width) // 2, (side - im.height) // 2))
     # Pixel-art sprites stay crisp when scaled by whole numbers; others are scaled smoothly.
-    sq = sq.resize((SIZE, SIZE), Image.NEAREST if side * 2 <= SIZE or SIZE % side == 0 else Image.LANCZOS)
+    sq = sq.resize((SIZE, SIZE), Image.NEAREST if SIZE % side == 0 else Image.LANCZOS)
     sq.save(os.path.join(OUT, f'{pid}.webp'), 'WEBP', quality=88, method=6)
     have.append(pid)
     if n % 100 == 0:

@@ -52,7 +52,9 @@ function pickT(k){
   if (onTeam(r.m)){ say(`${r.m.name} is already on the team.`); return }
   closeTSug(); tq.value = '';
   addToTeam(r.m);
+  // The box is disabled once the team is full, so move focus to the new Pokémon's remove button.
   if (!tq.disabled) tq.focus({ preventScroll: true });
+  else [...$('teamSlots').querySelectorAll('[data-trm]')].pop()?.focus({ preventScroll: true });
 }
 tq.addEventListener('input', renderTSug);
 tq.addEventListener('focus', () => { if (tq.value.trim()) renderTSug() });
@@ -60,7 +62,7 @@ tq.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown' && tItems.length){ e.preventDefault(); tActive = (tActive + 1) % tItems.length; markTActive() }
   else if (e.key === 'ArrowUp' && tItems.length){ e.preventDefault(); tActive = (tActive - 1 + tItems.length) % tItems.length; markTActive() }
   else if (e.key === 'Enter'){ e.preventDefault(); if (!tq.value.trim()) return; if (tsug.hidden) renderTSug(); pickT(Math.max(tActive, 0)) }
-  else if (e.key === 'Escape'){ if (!tsug.hidden){ closeTSug(); e.stopPropagation() } else if (tq.value){ tq.value = ''; e.stopPropagation() } }
+  else if (e.key === 'Escape'){ if (!pop.hidden) closePop(); if (!tsug.hidden){ closeTSug(); e.stopPropagation() } else if (tq.value){ tq.value = ''; e.stopPropagation() } }
 });
 tsug.addEventListener('mousedown', e => e.preventDefault());
 tsug.addEventListener('click', e => { const li = e.target.closest('[data-k]'); if (li) pickT(+li.dataset.k) });
@@ -240,9 +242,11 @@ function renderTeam(){
     out.innerHTML = (tmode === 'use' ? useView(A, n) : fightView(A, n)) + table(A);
   }
   // Keep the lookup's "Add to team" button in step.
-  if (typeof renderPlan === 'function' && $('plan').querySelector('[data-addteam]')){
-    const had = document.activeElement?.dataset?.addteam;
-    renderPlan();
+  // Only that button is replaced, so open sections and focus elsewhere in the card are left alone.
+  const old = $('plan').querySelector('[data-addteam]');
+  if (old){
+    const had = document.activeElement === old, m = BY_SLUG.get(old.dataset.addteam);
+    old.outerHTML = teamButton(m);
     if (had) $('plan').querySelector('[data-addteam]')?.focus({ preventScroll: true });
   }
 }
@@ -250,7 +254,7 @@ function renderTeam(){
 /* Popover: one move type against each member. */
 function teamWhy(anchor, atk){
   const A = analyse().find(r => r.t === atk);
-  const body = `<ul class="pop-list">${A.per.map(p => `<li><span>${esc(p.m.name)} <span class="pop-types">(${p.m.types.join('/')})</span></span><span class="mult ${mcls(p.x)}">${fmt(p.x)}</span>${p.warn.length ? `<small>${p.warn.map(w => `${esc(w.ab)}: ${fmt(w.x)}`).join(', ')}</small>` : ''}${p.x !== p.base ? '<small>its ability changes this</small>' : ''}</li>`).join('')}</ul>`;
+  const body = `<ul class="pop-list">${A.per.map(p => `<li><span>${esc(p.m.name)} <span class="pop-types">(${p.m.types.join('/')})</span></span><span class="mult ${tmode === 'use' ? mineCls(p.x) : mcls(p.x)}">${fmt(p.x)}</span>${p.warn.length ? `<small>${p.warn.map(w => `${esc(w.ab)}: ${fmt(w.x)}`).join(', ')}</small>` : ''}${p.x !== p.base ? '<small>its ability changes this</small>' : ''}</li>`).join('')}</ul>`;
   openPop(anchor, `${atk} moves against ${tmode === 'use' ? 'your team' : 'their team'}`, body);
 }
 
