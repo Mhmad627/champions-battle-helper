@@ -1,0 +1,37 @@
+# The service worker (sw.js) serves the whole site from its cache, so phones only get a new version of the
+# site when VERSION in sw.js goes up. This check fails (red X) when site files change but VERSION doesn't.
+# It never changes or commits anything.
+name: Version check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Site changes need a higher VERSION in sw.js
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "No earlier commit to compare with."; exit 0
+          fi
+          # Files the site doesn't cache (tools, docs, workflows, robots.txt, sitemap.xml) don't need a new VERSION.
+          changed=$(git diff --name-only "$BASE" HEAD | grep -vE '^(tools/|\.github/)|\.md$|^(robots\.txt|sitemap\.xml|\.gitignore|LICENSE.*)$' || true)
+          if [ -z "$changed" ]; then echo "No site files changed."; exit 0; fi
+          old=$(git show "$BASE:sw.js" 2>/dev/null | grep -oE "cbh-v[0-9]+" | head -1)
+          new=$(grep -oE "cbh-v[0-9]+" sw.js | head -1)
+          if [ -z "$old" ] || [ "${new#cbh-v}" -gt "${old#cbh-v}" ]; then echo "VERSION went from ${old:-nothing} to $new."; exit 0; fi
+          echo "::error file=sw.js::Site files changed but VERSION in sw.js is still $old, so phones would keep showing the old site. Bump VERSION."
+          echo "Changed site files:"; echo "$changed"
+          exit 1

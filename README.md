@@ -15,7 +15,7 @@ It's made for phones, so you can check a matchup mid-battle without memorising t
 - **Pick types yourself:** choose any one or two types and see every Pokémon with that typing.
 - **Full type chart:** 18×18 chart with tap-to-explain squares.
 - **Best and worst types:** the toughest and most fragile typings, and the best attacking pairs.
-- **Abilities:** searchable list of all 314 abilities, with filters for matchups, weather and terrain.
+- **Abilities:** searchable list of all 313 abilities, with filters for matchups, weather and terrain.
 - **Weather and terrain:** what each one does, with related abilities.
 - **Beginner glossary:** tap terms like STAB, "grounded" or "super effective" for a short explanation.
 - **Works offline and installs like an app** (add it to your home screen) when served over HTTPS.
