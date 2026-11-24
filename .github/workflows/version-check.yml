@@ -26,12 +26,18 @@ jobs:
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             echo "No earlier commit to compare with."; exit 0
           fi
-          # Files the site doesn't cache (tools, docs, workflows, robots.txt, sitemap.xml) don't need a new VERSION.
-          changed=$(git diff --name-only "$BASE" HEAD | grep -vE '^(tools/|\.github/)|\.md$|^(robots\.txt|sitemap\.xml|\.gitignore|LICENSE.*)$' || true)
+          # Only sw.js and the files it stores in its VERSION cache (its FILES list) need a new VERSION.
+          # Other files (tools, docs, the share image, the Pokémon icons, which have their own cache) don't.
+          node -e '
+            const src = require("fs").readFileSync("sw.js", "utf8");
+            const FILES = new Function(src.slice(src.indexOf("const TYPES"), src.indexOf("];", src.indexOf("const FILES")) + 2) + "; return FILES")();
+            for (const f of ["sw.js", ...FILES]) console.log(f === "./" ? "index.html" : f);
+          ' > cached.txt
+          changed=$(git diff --name-only "$BASE" HEAD | grep -xFf cached.txt || true)
           if [ -z "$changed" ]; then echo "No site files changed."; exit 0; fi
           old=$(git show "$BASE:sw.js" 2>/dev/null | grep -oE "cbh-v[0-9]+" | head -1)
           new=$(grep -oE "cbh-v[0-9]+" sw.js | head -1)
           if [ -z "$old" ] || [ "${new#cbh-v}" -gt "${old#cbh-v}" ]; then echo "VERSION went from ${old:-nothing} to $new."; exit 0; fi
           echo "::error file=sw.js::Site files changed but VERSION in sw.js is still $old, so phones would keep showing the old site. Bump VERSION."
-          echo "Changed site files:"; echo "$changed"
+          echo "Changed files that phones keep a copy of:"; echo "$changed"
           exit 1

@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v29';
+const VERSION = 'cbh-v30';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
@@ -59,25 +59,28 @@ self.addEventListener('fetch', e => {
   if (req.mode === 'navigate') {
     const url = new URL(req.url), root = new URL(self.registration.scope);
     const home = url.pathname === root.pathname || url.pathname === root.pathname + 'index.html';
-    // /about is stored as about.html (hosts like Cloudflare Pages drop the .html), so try that too.
+    // Which stored page this is: /about is stored as about.html (hosts like Cloudflare Pages drop the .html).
     const path = url.pathname.replace(/\/$/, '');
-    const find = () => own(url.origin + path).then(r => r || (/\/[^./]+$/.test(path) ? own(path + '.html') : null));
+    const key = home ? root.href : [url.origin + path, url.origin + path + '.html'].find(k => OURS.has(k));
+    const goHome = () => Response.redirect(root.href, 302);   // by address, so its relative links work
     if (!home && path !== url.pathname) {
-      // /about/: if /about is stored, go there, so the page's relative links (css/style.css) point to the
-      // stored files. Otherwise leave it to the server (some hosts add the slash themselves).
-      e.respondWith(find().then(r => r ? Response.redirect(new URL(path + url.search, url).href, 302) : fetch(req)));
+      // /about/: if it's a stored page, go to /about, so the page's relative links (css/style.css) point to
+      // the stored files. Otherwise leave it to the server (some hosts add the slash themselves).
+      e.respondWith(key ? Response.redirect(new URL(path + url.search, url).href, 302) : fetch(req).catch(goHome));
       return;
     }
-    const stored = home ? own('./') : find();
-    e.respondWith(stored.then(r => r || fetch(req).catch(() =>
-      // Offline and not stored: show the home page (by address, so its relative links work), or say so.
-      home ? OFFLINE.clone() : Response.redirect(root.href, 302))));
+    e.respondWith((key ? own(key) : Promise.resolve(null)).then(r => r || fetch(req).then(res => {
+      // A stored page that went missing is saved again.
+      if (key && res.ok) try { e.waitUntil(plain(res.clone()).then(c => caches.open(VERSION).then(v => v.put(key, c))).catch(() => {})) } catch {}
+      return res;
+    }, () => home ? OFFLINE.clone() : goHome())));   // offline and not stored
     return;
   }
   // Only the site's own files and the Pokémon icons are kept; anything else just goes to the network.
   const icon = req.url.includes('/assets/pokemon/'), store = icon ? IMG : OURS.has(req.url) ? VERSION : null;
   if (!store) return;
-  e.respondWith(caches.open(store).then(c => c.match(req)).then(hit => hit || fetch(req).then(res => {
+  // A missing site file is fetched fresh (not from the browser's own HTTP cache, which may hold an older one).
+  e.respondWith(caches.open(store).then(c => c.match(req)).then(hit => hit || fetch(icon ? req : new Request(req, { cache: 'no-cache' })).then(res => {
     if (res.ok) {
       const copy = res.clone();
       try { e.waitUntil(caches.open(store).then(c => c.put(req, copy)).catch(() => {})) } catch {}
