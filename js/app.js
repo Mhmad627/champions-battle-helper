@@ -7,7 +7,6 @@ const idx = n => T.indexOf(n);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const fold = t => t.normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/♀/g,' f').replace(/♂/g,' m').replace(/[^a-z0-9]+/g,' ').trim();
 const joinList = (a, w = 'and') => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' ' + w + ' ' + a[a.length - 1];
-const an = w => (/^[AEIOU]/.test(w) ? 'an ' : 'a ') + w;
 const store = {
   get(k, d){ try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } },
   set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)) } catch {} }
@@ -195,7 +194,6 @@ function renderPlan(){
   el.style.setProperty('--c1', TYPE_COLOR[sel[0]]);
   el.style.setProperty('--c2', TYPE_COLOR[sel[1] || sel[0]]);
   const name = mon ? mon.name : sel.join(' / ');
-  const who = mon ? mon.name : `${an(sel.join('/'))} Pokémon`;
   const P = profile();
   const hit = P.filter(p => p.x > 1).sort((a, b) => b.x - a.x || idx(a.t) - idx(b.t));
   const skip = P.filter(p => p.x < 1).sort((a, b) => a.x - b.x || idx(a.t) - idx(b.t));
@@ -233,34 +231,11 @@ function renderPlan(){
     h += `<ul class="notes">${notes.map(a => `<li>${WARN_SVG}<span>${a.sure ? `It has <b>${esc(a.name)}</b>: ${a.def.say}${a.def.mods || a.def.se || a.def.wg || a.def.ds ? ' This is already counted above.' : ''}` : `It might have <b>${esc(a.name)}</b>${a.hidden ? ' (its ' + term('hidden ability') + ')' : ''}: ${a.def.say}`}</span></li>`).join('')}</ul>`;
   }
 
-  // Plain-language tip
-  h += `<div class="tip">${tipText(hit, skip, who)}</div>`;
-
   h += `<details class="more"><summary>Normal damage (1×) from ${neutral.length} types</summary>${tiles(neutral, 'small')}</details>`;
 
   const same = MON.filter(m => sameTypes(m.types, sel) && m !== mon);
-  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.slice(0, 8).map(m => `<button data-mon="${m.slug}">${esc(m.name)}</button>`).join('')}${same.length > 8 ? ` and ${same.length - 8} more` : ''}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
+  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}">${esc(m.name)}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
   el.innerHTML = h;
-}
-
-function tipText(hit, skip, who){
-  if (mode === 'fight'){
-    if (!hit.length) return `<b>Nothing hits ${esc(who)} super effectively.</b> Use your strongest moves of a type it doesn't resist.`;
-    const best = hit[0], top = hit.filter(p => p.x === best.x);
-    let s = `<b>Your best bet:</b> ${joinList(top.map(p => `<b>${p.t}</b>`), 'or')} moves do <b>${fmt(best.x)}</b> damage to ${esc(who)}.`;
-    const hints = sel.filter(d => mult(best.t, d) > 1).map(d => HINTS[best.t + '>' + d]).filter(Boolean);
-    const imm = skip.filter(p => p.x === 0 && p.base === 0);
-    if (imm.length){
-      const i0 = imm[0], why = sel.map(d => HINTS[i0.t + '>' + d]).find(Boolean);
-      s += ` Never use <b>${joinList(imm.map(p => p.t), 'or')}</b>: it does nothing.${why ? ' ' + why : ''}`;
-    }
-    if (hints.length) s += `<span class="hint">Remember it: ${hints.join(' ')}</span>`;
-    return s;
-  }
-  const worst = hit[0];
-  let s = worst ? `<b>Keep ${esc(who)} away from ${joinList(hit.filter(p => p.x === worst.x).map(p => p.t))} moves:</b> they do ${fmt(worst.x)} damage.` : `<b>${esc(who)} has no weaknesses.</b> Nothing hits it super effectively.`;
-  s += ` Its ${sel.join(' and ')} moves get a 1.5× ${term('stab', 'STAB')} bonus, so use them when you can.`;
-  return s;
 }
 
 /* ---------- Manual type picker ---------- */
@@ -307,8 +282,7 @@ function showReadout(atk, defs){
   if (!atk){ el.innerHTML = 'Hover or tap a square to read it.'; return }
   if (!defs.length){ el.innerHTML = `${chip(atk)} <span>Look up a Pokémon first to fill the last column.</span>`; return }
   const x = vs(atk, defs);
-  const hints = defs.map(d => HINTS[atk + '>' + d]).filter(Boolean);
-  el.innerHTML = `${chip(atk)} move against ${defs.map(d => chip(d)).join(' ')} <span class="mult ${mcls(x)}">${fmt(x)}</span><strong>${WORD(x)}</strong>${hints.length ? `<span class="hint">${hints.join(' ')}</span>` : ''}`;
+  el.innerHTML = `${chip(atk)} move against ${defs.map(d => chip(d)).join(' ')} <span class="mult ${mcls(x)}">${fmt(x)}</span><strong>${WORD(x)}</strong>`;
 }
 function renderChart(){
   const any = sel.length > 0;
@@ -440,14 +414,12 @@ function abilityPop(anchor, name){
     (d ? `<p class="fx">In battle: ${esc(d.say)}</p>` : '') + `<button class="more-link" data-ablist="${esc(name)}">Open in the abilities list</button>`);
 }
 function whyPop(anchor, atk){
-  const parts = sel.map(d => ({ d, x: mult(atk, d), hint: HINTS[atk + '>' + d] }));
+  const parts = sel.map(d => ({ d, x: mult(atk, d) }));
   const P = profile().find(p => p.t === atk);
   let body = `<p>${parts.map(p => `${atk} vs ${p.d}: <b>${fmt(p.x)}</b>`).join('<br>')}</p>`;
   if (parts.length > 1) body += `<p>Multiply them: ${parts.map(p => fmt(p.x).replace('×', '')).join(' × ')} = <b>${fmt(P.base)}</b>. That's how ${term('dual type', 'dual types')} work.</p>`;
   if (P.x !== P.base) body += `<p>Its ability changes this to <b>${fmt(P.x)}</b>.</p>`;
   if (P.warn.length) body += `<p>If it has ${P.warn.map(w => `<b>${esc(w.ab)}</b> it becomes <b>${fmt(w.x)}</b>`).join(', and if it has ')}.</p>`;
-  const hints = parts.filter(p => p.hint && p.x !== 1).map(p => p.hint);
-  if (hints.length) body += `<p class="fx">${hints.join(' ')}</p>`;
   openPop(anchor, `${atk} moves: ${fmt(P.x)}`, body);
 }
 document.addEventListener('click', e => {

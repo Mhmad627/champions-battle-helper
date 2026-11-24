@@ -114,9 +114,6 @@ button.chip:hover{background:color-mix(in srgb,var(--tc) 34%,var(--panel))}
 .tiles.small .tile .ti{width:32px;height:32px}
 .tiles.small .tile .big{font-size:19px}
 .none{color:var(--faint);margin:0}
-.tip{margin-top:24px;padding:16px 18px;border-radius:16px;background:var(--bg-2);font-size:16px;line-height:1.5}
-.tip b{font-weight:700}
-.tip .hint{display:block;margin-top:6px;color:var(--muted);font-size:15px}
 .notes{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:8px}
 .notes li{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--focus) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--focus) 30%,var(--line));font-size:15px}
 .notes li svg{width:20px;height:20px;flex:none;color:var(--focus);margin-top:1px}
@@ -202,7 +199,6 @@ details.more .tiles{margin-top:10px}
 .combo.x0{background:var(--zero);color:var(--zero-text)}
 .readout{margin-top:14px;min-height:50px;display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:10px 14px;border-radius:14px;background:var(--bg-2);font-size:15px;color:var(--muted)}
 .readout strong{color:var(--text)}
-.readout .hint{flex-basis:100%;font-size:14px;color:var(--faint)}
 .mult{display:inline-grid;place-items:center;height:28px;min-width:44px;padding:0 8px;border-radius:8px;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
 .m4{background:var(--good-strong);color:var(--good)} .m2{background:var(--good-bg);color:var(--good)}
 .m1{background:var(--panel-2);color:var(--muted)}

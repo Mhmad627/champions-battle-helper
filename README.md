@@ -5,7 +5,7 @@ A Pokémon type matchup helper for players who can't remember every matchup. Typ
 ## Features
 
 - **Pokémon lookup:** search all 1,230 Pokémon and forms (regional forms and Megas included). Typos are fine.
-- **Battle plan:** "Hit it with" and "Don't bother with" lists, plus a plain-language tip and a memory hint for each matchup.
+- **Battle plan:** "Hit it with" and "Don't bother with" lists, with tap-to-explain maths for each matchup.
 - **Two views:** *I'm fighting it* (what beats it) and *I'm using it* (what to watch out for, and what its own moves are strong against).
 - **Ability-aware:** abilities like Levitate, Flash Fire or Thick Fat are applied or flagged as "might have".
 - **Pick types yourself:** choose any one or two types, and see Pokémon with that typing.

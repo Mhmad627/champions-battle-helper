@@ -1,4 +1,4 @@
-// Static game data: types, matchups, beginner hints, glossary, ability effects, field effects.
+// Static game data: types, matchups, glossary, ability effects, field effects.
 // Pokémon and ability lists come from data/pokemon.js and data/abilities.js (generated).
 
 const TYPES = ['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
@@ -30,30 +30,6 @@ const CHART = {
   Dark:[['Psychic','Ghost'],['Fighting','Dark','Fairy'],[]],
   Steel:[['Ice','Rock','Fairy'],['Fire','Water','Electric','Steel'],[]],
   Fairy:[['Fighting','Dragon','Dark'],['Fire','Poison','Steel'],[]]
-};
-
-// Memory hooks for beginners: "attacker>defender"
-const HINTS = {
-  'Fire>Grass':'Fire burns plants.','Fire>Ice':'Fire melts ice.','Fire>Bug':'Bugs get burned up by flames.','Fire>Steel':'A forge fire melts metal.',
-  'Water>Fire':'Water puts out fire.','Water>Ground':'Water turns ground into mud.','Water>Rock':'Water wears rock down.',
-  'Electric>Water':'Water conducts electricity.','Electric>Flying':'Lightning strikes things in the sky.',
-  'Grass>Water':'Plants soak up water.','Grass>Ground':'Roots break up the soil.','Grass>Rock':'Roots crack rocks apart.',
-  'Ice>Grass':'Frost kills plants.','Ice>Ground':'Frozen ground cracks.','Ice>Flying':'Ice weighs down wings.','Ice>Dragon':'Dragons are like reptiles: they hate the cold.',
-  'Fighting>Normal':'A trained fighter beats an ordinary opponent.','Fighting>Ice':'A karate chop breaks ice.','Fighting>Rock':'Martial artists smash rocks.','Fighting>Dark':'Discipline beats dirty tricks.','Fighting>Steel':'Strong punches dent metal.',
-  'Poison>Grass':'Poison kills plants, like weed killer.','Poison>Fairy':'Pollution ruins fairy magic.',
-  'Ground>Fire':'Dirt smothers fire.','Ground>Electric':'Grounding shorts out electric circuits.','Ground>Poison':'The earth breaks poison down.','Ground>Rock':'Earthquakes shatter rock.','Ground>Steel':'Earthquakes topple steel towers.',
-  'Flying>Grass':'Birds eat plants and seeds.','Flying>Fighting':'A fighter can\'t punch what flies above them.','Flying>Bug':'Birds eat bugs.',
-  'Psychic>Fighting':'Mind beats muscle.','Psychic>Poison':'A strong mind overcomes poison.',
-  'Bug>Grass':'Bugs eat plants.','Bug>Psychic':'Bugs creep people out and break their focus.','Bug>Dark':'Bugs swarm in the dark.',
-  'Rock>Fire':'Rocks smother fire.','Rock>Ice':'Rocks smash ice.','Rock>Flying':'A thrown rock knocks birds out of the sky.','Rock>Bug':'Rocks crush bugs.',
-  'Ghost>Psychic':'Psychics are afraid of ghosts.','Ghost>Ghost':'Ghosts can haunt each other.',
-  'Dragon>Dragon':'Dragons are weak to their own kind.',
-  'Dark>Psychic':'Dirty tricks catch psychics off guard.','Dark>Ghost':'Darkness swallows spirits.',
-  'Steel>Ice':'Steel picks break ice.','Steel>Rock':'Steel tools cut rock.','Steel>Fairy':'In folklore, fairies fear iron.',
-  'Fairy>Fighting':'Magic beats brute force.','Fairy>Dragon':'In fairy tales, magic defeats dragons.','Fairy>Dark':'Light beats darkness.',
-  'Normal>Ghost':'Normal attacks pass straight through ghosts.','Fighting>Ghost':'You can\'t punch a ghost.','Ghost>Normal':'Normal Pokémon don\'t notice ghostly attacks.',
-  'Electric>Ground':'The ground soaks up electricity.','Poison>Steel':'Metal can\'t be poisoned.','Ground>Flying':'Ground moves can\'t reach Pokémon in the air.',
-  'Psychic>Dark':'Psychic powers can\'t read a dark mind.','Dragon>Fairy':'Fairy magic shrugs off dragon power.'
 };
 
 const GLOSSARY = {
