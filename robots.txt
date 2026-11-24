@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-# Add once the site has a domain:
-# Sitemap: https://YOUR-DOMAIN/sitemap.xml
+Sitemap: https://champions-battle-helper.pages.dev/sitemap.xml
