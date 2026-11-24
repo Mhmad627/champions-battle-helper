@@ -4,7 +4,8 @@ Usage:  python tools/build_data.py            (downloads tables into tools/.cach
         python tools/build_data.py --offline  (reuse the cached tables)
 
 Writes:
-  data/pokemon.js    window.POKEMON   = [[name, dexNo, [types], [abilities], hiddenAbility, searchKey], ...]
+  data/pokemon.js    window.POKEMON   = [[name, dexNo, [types], [abilities], hiddenAbility, searchKey, pokeapiId], ...]
+                     (pokeapiId names the sprite file: see tools/get_sprites.py)
   data/abilities.js  window.ABILITIES = [[name, gen, description, summary], ...]
 
 Data: PokéAPI (https://pokeapi.co), BSD-3 licensed code / data from the games.
@@ -134,7 +135,7 @@ for r in rows:
         else:
             name = species_name[sid] + ' (' + r['identifier'].split('-', 1)[-1].replace('-', ' ').title() + ')'
     key = fold(name + ' ' + r['identifier'].replace('-', ' '))
-    out.append([name, int(sid), ty, normal, hidden[0], key])
+    out.append([name, int(sid), ty, normal, hidden[0], key, int(pid)])
 
 # drop exact duplicate display names (keep first)
 seen, final = set(), []

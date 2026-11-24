@@ -31,6 +31,7 @@
     </a>
     <ul class="secnav" id="secnav">
       <li><a href="#sec-match">Look up</a></li>
+      <li><a href="#sec-team">Team</a></li>
       <li><a href="#sec-chart">Type chart</a></li>
       <li><a href="#sec-abilities">Abilities</a></li>
       <li><a href="#sec-field">Weather &amp; terrain</a></li>
@@ -69,6 +70,29 @@
           <button class="btn" id="clear">Clear</button>
         </div>
       </aside>
+    </div>
+  </section>
+
+  <section class="section anchor" id="sec-team" aria-labelledby="h-team">
+    <h2 id="h-team">Check a team</h2>
+    <p class="sub">Add up to six Pokémon to see what the team is weak to, what it handles well, and what its moves can hit. Works for your own team or the one you're up against.</p>
+    <div class="card team">
+      <div class="team-top">
+        <div class="field-search team-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="tq" type="search" placeholder="Add a Pokémon, like Garchomp" autocomplete="off" autocapitalize="off" spellcheck="false"
+                 role="combobox" aria-expanded="false" aria-controls="tsug" aria-autocomplete="list" aria-label="Add a Pokémon to the team">
+          <ul class="sug" id="tsug" role="listbox" aria-label="Pokémon to add" hidden></ul>
+        </div>
+        <div class="mode" role="group" aria-label="Whose team is this">
+          <button data-tmode="fight" aria-pressed="false">I'm fighting them</button>
+          <button data-tmode="use" aria-pressed="true">I'm using them</button>
+        </div>
+      </div>
+      <div class="team-bar"><span class="team-count" id="teamCount">0 of 6</span><button class="btn" id="teamClear">Clear team</button></div>
+      <ul class="tslots" id="teamSlots" aria-label="Team"></ul>
+      <p class="sr" id="teamLive" aria-live="polite"></p>
+      <div id="teamOut"></div>
     </div>
   </section>
 
@@ -129,8 +153,8 @@
   </section>
 
   <footer>
-    <p>Champions Battle Helper is an unofficial fan site and isn't affiliated with Nintendo, Game Freak or The Pokémon Company. Pokémon, Pokémon Champions and the type icons are trademarks of their respective owners.</p>
-    <p>Pokémon and ability data from <a href="https://pokeapi.co" rel="noopener">PokéAPI</a>; Champions roster based on Serebii. Type matchups follow Generation VI and later.</p>
+    <p>Champions Battle Helper is an unofficial fan site and isn't affiliated with Nintendo, Game Freak or The Pokémon Company. Pokémon, Pokémon Champions, the Pokémon images and the type icons are trademarks and copyrights of their respective owners.</p>
+    <p>Pokémon data and icons from <a href="https://pokeapi.co" rel="noopener">PokéAPI</a>; Champions roster based on Serebii. Type matchups follow Generation VI and later.</p>
     <p><a href="about.html">About</a> · <a href="about.html#privacy">Privacy</a> · <a href="https://ko-fi.com/mhmadart" rel="noopener">Support me on Ko-fi</a></p>
     <p>Keyboard: <b>/</b> search, <b>R</b> random Pokémon, <b>B</b> best &amp; worst types, <b>Esc</b> close pop-ups.</p>
   </footer>
@@ -138,6 +162,7 @@
 
 <nav class="tabbar" id="tabbar" aria-label="Sections">
   <a href="#sec-match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Look up</a>
+  <a href="#sec-team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.8"/><path d="M16.5 14.2A5.5 5.5 0 0 1 21.5 20"/></svg>Team</a>
   <a href="#sec-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17M15 3.5v17"/></svg>Chart</a>
   <a href="#sec-abilities"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Abilities</a>
   <a href="#sec-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="4"/><path d="M9 1.5v1.5M2.5 9H1M3.8 3.8l1 1M14.2 3.8l-1 1"/><path d="M8 20h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.4 1.5A3.3 3.3 0 0 0 8 20z" fill="var(--panel)"/></svg>Weather</a>
@@ -165,8 +190,10 @@
 <script src="data/pokemon.js"></script>
 <script src="data/abilities.js"></script>
 <script src="data/champions.js"></script>
+<script src="data/sprites.js"></script>
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>
+<script src="js/team.js"></script>
 <script src="js/theme.js"></script>
 </body>
 </html>

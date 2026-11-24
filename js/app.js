@@ -26,7 +26,12 @@ const mcls = x => x === 0 ? 'm0' : x >= 4 ? 'm4' : x > 1 ? 'm2' : x === 1 ? 'm1'
 const WORD = x => x === 0 ? 'No effect' : x > 1 ? 'Super effective' : x < 1 ? 'Not very effective' : 'Normal damage';
 
 /* ---------- Data ---------- */
-const MON = window.POKEMON.map(([name, no, types, abil, hidden, key], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-') }));
+const SPR = new Set(window.SPRITES || []);
+const MON = window.POKEMON.map(([name, no, types, abil, hidden, key, pid], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-'), spr: SPR.has(pid) ? pid : 0 }));
+// Pokémon icon (PokéAPI sprite, see tools/get_sprites.py); empty when there's no sprite for that form.
+const monImg = (m, size, cls = '') => m && m.spr ? `<img class="mi ${cls}" src="assets/pokemon/${m.spr}.webp" alt="" width="${size}" height="${size}" loading="lazy" decoding="async">` : '';
+// Pokémon icon, or its type icons when there's no sprite.
+const monFace = (m, size, tsize) => m.spr ? monImg(m, size) : `<span class="ts">${m.types.map(t => icon(t, tsize || 22)).join('')}</span>`;
 const CH_SPECIES = new Set((window.CHAMPIONS || {}).species || []), CH_MEGAS = new Set((window.CHAMPIONS || {}).megas || []);
 const CH_NOT = new Set((window.CHAMPIONS || {}).notForms || []), CH_NOTES = (window.CHAMPIONS || {}).notes || {};
 // Label for Pokémon and forms outside the roster. "Yet" because the roster changes with game updates.
@@ -100,8 +105,8 @@ function renderSug(){
   if (!v.trim()){ closeSug(); return }
   sugItems = search(v); sugActive = sugItems.length ? 0 : -1;
   sug.innerHTML = sugItems.length ? sugItems.map((r, k) => r.kind === 'type'
-    ? `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${icon(r.t, 24)}</span><span class="nm">${r.t}</span><span class="kind">type</span></li>`
-    : `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${r.m.champ ? '' : `<span class="nic">${notIn(r.m, true)}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
+    ? `<li role="option" id="o${k}" data-k="${k}"><span class="mi-box"></span><span class="ts">${icon(r.t, 24)}</span><span class="nm">${r.t}</span><span class="kind">type</span></li>`
+    : `<li role="option" id="o${k}" data-k="${k}"><span class="mi-box">${monImg(r.m, 40)}</span><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${r.m.champ ? '' : `<span class="nic">${notIn(r.m, true)}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
     : `<li class="empty">No Pokémon or type called “${esc(v.trim())}”. Check the spelling?</li>`;
   sug.hidden = false; q.setAttribute('aria-expanded', 'true');
   markActive();
@@ -135,7 +140,7 @@ document.addEventListener('click', e => { if (!e.target.closest('.search-box')) 
 function renderRecent(){
   const list = recent.map(s => BY_SLUG.get(s)).filter(Boolean);
   $('recent').innerHTML = list.length
-    ? 'Recent: ' + list.map(m => `<button class="rchip" data-mon="${m.slug}">${m.types.map(t => icon(t, 22)).join('')}${esc(m.name)}</button>`).join('')
+    ? 'Recent: ' + list.map(m => `<button class="rchip" data-mon="${m.slug}">${monFace(m, 30)}${esc(m.name)}</button>`).join('')
     : '';
 }
 
@@ -145,27 +150,28 @@ function abilitiesOf(m){
   const all = [...new Set([...m.abil, ...(m.hidden ? [m.hidden] : [])])];
   return all.map(a => ({ name: a, hidden: a === m.hidden && !m.abil.includes(a), def: ABILITY_DEF[a], sure: all.length === 1 }));
 }
-function applyAb(x, atk, def){
+function applyAb(x, atk, def, types = sel){
   if (!def) return x;
   if (def.mods && atk in def.mods) x *= def.mods[atk];
   if (def.se && x > 1) x *= def.se;
   if (def.wg && x <= 1) x = 0;
-  if (def.ds && sel.includes('Flying') && mult(atk, 'Flying') === 2) x /= 2;
+  if (def.ds && types.includes('Flying') && mult(atk, 'Flying') === 2) x /= 2;
   return x;
 }
-// Defensive profile: every attacking type -> {x, base, warn:[{ab, x}]}
-function profile(){
-  const abs = abilitiesOf(mon);
+// Defensive profile of a typing (and Pokémon, for abilities): every attacking type -> {x, base, warn:[{ab, x}]}
+function profileOf(types, m){
+  const abs = abilitiesOf(m);
   const sure = abs.filter(a => a.sure && a.def && (a.def.mods || a.def.se || a.def.wg || a.def.ds));
   const maybe = abs.filter(a => !a.sure && a.def && (a.def.mods || a.def.se || a.def.wg || a.def.ds));
   return T.map(a => {
-    const base = vs(a, sel);
-    let x = base; sure.forEach(s => x = applyAb(x, a, s.def));
+    const base = vs(a, types);
+    let x = base; sure.forEach(s => x = applyAb(x, a, s.def, types));
     const warn = [];
-    maybe.forEach(s => { const y = applyAb(x, a, s.def); if (y !== x) warn.push({ ab: s.name, x: y }) });
+    maybe.forEach(s => { const y = applyAb(x, a, s.def, types); if (y !== x) warn.push({ ab: s.name, x: y }) });
     return { t: a, x, base, warn };
   });
 }
+const profile = () => profileOf(sel, mon);
 
 /* ---------- Battle plan ---------- */
 const WARN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg>';
@@ -188,7 +194,7 @@ function renderPlan(){
     el.innerHTML = `<div class="welcome">
       <h2>Look up the Pokémon you're up against</h2>
       <p>You'll get the move types that hit it hardest, the ones to avoid, and why.</p>
-      <div class="tries">${['Garchomp','Gyarados','Gengar','Charizard','Pikachu','Snorlax'].map(n => BY_SLUG.get(fold(n))).filter(Boolean).map(m => `<button class="rchip" data-mon="${m.slug}">${m.types.map(t => icon(t, 22)).join('')}${esc(m.name)}</button>`).join('')}</div>
+      <div class="tries">${['Garchomp','Gyarados','Gengar','Charizard','Pikachu','Snorlax'].map(n => BY_SLUG.get(fold(n))).filter(Boolean).map(m => `<button class="rchip" data-mon="${m.slug}">${monFace(m, 30)}${esc(m.name)}</button>`).join('')}</div>
       <ol>
         <li>Every Pokémon has one or two types, like Fire or Water/Ground.</li>
         <li>Every move has a type too.</li>
@@ -206,12 +212,13 @@ function renderPlan(){
   const neutral = P.filter(p => p.x === 1);
   const abs = abilitiesOf(mon);
 
-  let h = `<div class="plan-head"><div>
+  let h = `<div class="plan-head"><div class="plan-id">${mon ? monImg(mon, 96, 'plan-mi') : ''}<div>
       ${mon ? `<span class="plan-no">#${String(mon.no).padStart(4, '0')}${mon.champ ? '' : `<span class="nic">${notIn(mon)}</span>`}</span>` : ''}
       <h2 class="plan-name" tabindex="-1">${esc(name)}</h2>
       <div class="plan-types">${sel.map(t => chip(t, 'lg')).join('')}</div>
+      ${mon && typeof teamButton === 'function' ? teamButton(mon) : ''}
       ${mon && CH_NOTES[mon.name] ? `<p class="plan-note">${esc(CH_NOTES[mon.name])}</p>` : ''}
-    </div>
+    </div></div>
     <div class="mode" role="group" aria-label="View">
       <button data-mode="fight" aria-pressed="${mode === 'fight'}">I'm fighting it</button>
       <button data-mode="use" aria-pressed="${mode === 'use'}">I'm using it</button>
@@ -241,7 +248,7 @@ function renderPlan(){
   h += `<details class="more"><summary>Normal damage (1×) from ${neutral.length} types</summary>${tiles(neutral, 'small')}</details>`;
 
   const same = MON.filter(m => sameTypes(m.types, sel) && m !== mon);
-  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${esc(m.name)}${m.champ ? '' : `<span class="sr"> (${notIn(m).replace('Not in', 'not in')})</span>`}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
+  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${monImg(m, 26)}${esc(m.name)}${m.champ ? '' : `<span class="sr"> (${notIn(m).replace('Not in', 'not in')})</span>`}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
   el.innerHTML = h;
 }
 
@@ -291,12 +298,20 @@ g.addEventListener('click', e => {
 // Picking a type from the chart changes the lookup at the top of the page, which pushes the chart
 // up or down. Instead, centre the chart (axis label to readout) in the visible area, between the
 // sticky header and the phone tab bar.
-function centerChart(){
+// Scroll so the span from a to z (viewport y positions) is centred in the visible area, between the
+// sticky header and the phone tab bar. With topIfTall, a span taller than the screen is lined up
+// with its top just under the header instead, so its start (e.g. the Pokémon's name) stays in view.
+function centerSpan(a, z, topIfTall){
   const top = document.querySelector('.top')?.getBoundingClientRect().bottom || 0;
   const bar = $('tabbar'), barH = bar && getComputedStyle(bar).display !== 'none' ? bar.offsetHeight : 0;
-  const a = g.closest('.chart-inner').getBoundingClientRect().top, z = $('readout').getBoundingClientRect().bottom;
-  scrollBy({ top: (a + z) / 2 - (top + (innerHeight - barH - top) / 2), behavior: 'instant' });
+  const room = innerHeight - barH - top;
+  scrollBy({ top: topIfTall && z - a > room ? a - top - 12 : (a + z) / 2 - (top + room / 2), behavior: 'instant' });
 }
+function centerChart(){
+  centerSpan(g.closest('.chart-inner').getBoundingClientRect().top, $('readout').getBoundingClientRect().bottom);
+}
+// Centre the lookup card (after picking a Pokémon from anywhere on the page).
+function showPlan(){ const r = $('plan').getBoundingClientRect(); centerSpan(r.top, r.bottom, true) }
 function showReadout(atk, defs){
   const el = $('readout');
   if (!atk){ el.innerHTML = 'Hover or tap a square to read it.'; return }
@@ -451,19 +466,9 @@ document.addEventListener('click', e => {
   const why = t.closest('[data-why]'); if (why){ whyPop(why, why.dataset.why); return }
   if (!t.closest('.pop')) closePop();
   const mb = t.closest('[data-mode]'); if (mb){ mode = mb.dataset.mode; renderPlan(); announce(); $('plan').querySelector(`[data-mode="${mode}"]`)?.focus(); return }
+  // Any Pokémon button (recent, examples, same typing, team): open it and centre the lookup card.
   const mn = t.closest('[data-mon]'); if (mn){ const m = BY_SLUG.get(mn.dataset.mon); if (m){
-    // From the "Same typing" row: stay where you are, keeping that row at the same spot on screen,
-    // so you can tap through related Pokémon. From anywhere else: scroll up to the battle plan.
-    const row = mn.closest('.same'), top = row?.getBoundingClientRect().top;
-    const idx = row ? [...row.querySelectorAll('button')].indexOf(mn) : 0;
-    setMon(m);
-    if (row){
-      const now = $('plan').querySelector('.same');
-      if (now) scrollBy({ top: now.getBoundingClientRect().top - top, behavior: 'instant' });
-      // Keep keyboard focus at the same spot in the row (the row's contents change).
-      const btns = now ? [...now.querySelectorAll('button')] : [];
-      (btns[Math.min(idx, btns.length - 1)] || $('plan').querySelector('.plan-name'))?.focus({ preventScroll: true });
-    } else { goTo('sec-match'); $('plan').querySelector('.plan-name')?.focus({ preventScroll: true }) }
+    setMon(m); showPlan(); $('plan').querySelector('.plan-name')?.focus({ preventScroll: true });
   } return }
   if (!t.closest('#grid') && focused) clearFocus();
 });
@@ -512,13 +517,13 @@ $('rank').addEventListener('click', e => {
   if (e.target === $('rank')){ $('rank').close(); return }
   const tab = e.target.closest('.tab'); if (tab){ rankTab = tab.dataset.tab; renderRank(); return }
   const it = e.target.closest('.rank-item');
-  if (it){ setTypes(it.dataset.combo.split('+')); $('rank').close(); goTo('sec-match') }
+  if (it){ setTypes(it.dataset.combo.split('+')); $('rank').close(); showPlan() }
 });
 $('rankSingles').addEventListener('change', renderRank);
 
 /* ---------- Navigation ---------- */
 const navLinks = [...document.querySelectorAll('.secnav a, .tabbar a')];
-const SECS = ['sec-match', 'sec-chart', 'sec-abilities', 'sec-field'];
+const SECS = ['sec-match', 'sec-team', 'sec-chart', 'sec-abilities', 'sec-field'];
 function goTo(id){ document.getElementById(id).scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }) }
 document.querySelectorAll('.secnav a, .tabbar a, .brand').forEach(a => a.addEventListener('click', e => { e.preventDefault(); goTo(a.getAttribute('href').slice(1)) }));
 function updateNav(){

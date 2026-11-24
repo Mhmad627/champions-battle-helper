@@ -10,6 +10,7 @@ It's made for phones, so you can check a matchup mid-battle without memorising t
 - **Champions roster:** Pokémon and forms that aren't in Champions are still listed, marked "Not in Pokémon Champions yet". Special cases get a short note (for example, Floette is only allowed in its Eternal Flower form).
 - **Battle plan:** "Hit it with" and "Don't bother with" lists. Tap any matchup to see the maths behind it.
 - **Two views:** *I'm fighting it* shows what beats it. *I'm using it* shows what to watch out for and what its own moves are strong against.
+- **Team checker:** add up to six Pokémon. *I'm using them* shows what your team is weak to, what it handles well and which types its moves can't hit. *I'm fighting them* shows the best move types against their team, what to avoid, what their moves threaten, and the best move against each of them. Both include a full move-type-by-Pokémon table.
 - **Ability-aware:** abilities like Levitate, Flash Fire or Thick Fat are applied, or flagged as "might have" when the Pokémon has more than one possible ability.
 - **Pick types yourself:** choose any one or two types and see every Pokémon with that typing.
 - **Full type chart:** 18×18 chart with tap-to-explain squares.
@@ -53,6 +54,7 @@ To host it, upload the folder to any static host (GitHub Pages, Netlify, Vercel,
   python tools/check_roster.py           # show differences
   python tools/check_roster.py --write   # update data/champions.js and bump the sw.js VERSION
   ```
+- **Pokémon icons** (`assets/pokemon/`, `data/sprites.js`) come from PokéAPI's sprite collection: `python tools/get_sprites.py` (needs Pillow; run after `build_data.py`, `--offline` reuses `tools/.cache/sprites`).
 - **App icons and the link preview image** (`assets/icons/`, `assets/og-image.png`) are made with `python tools/make_icons.py` (needs Pillow).
 
 The data files are plain JavaScript rather than JSON so the site still works when `index.html` is opened straight from disk.
@@ -67,7 +69,10 @@ sw.js                 offline cache
 css/style.css         all styles (dark and light themes)
 js/data.js            type chart, glossary, ability effects, weather and terrain
 js/app.js             search, battle plan, chart, abilities, rankings, navigation
+js/team.js            team checker
+js/theme.js           light/dark button (shared by both pages)
 data/                 generated Pokémon and ability data, hand-edited Champions roster
+assets/pokemon/       Pokémon icons (generated)
 assets/types/         type icons
 assets/icons/         app icons and favicon
 assets/fonts/         Bricolage Grotesque
@@ -85,8 +90,8 @@ No accounts, cookies, analytics or ads, and nothing you type leaves your device.
 
 ## Credits
 
-- Pokémon and ability data: [PokéAPI](https://pokeapi.co).
+- Pokémon and ability data: [PokéAPI](https://pokeapi.co). Pokémon icons: [PokéAPI sprites](https://github.com/PokeAPI/sprites).
 - Champions roster: based on [Serebii](https://www.serebii.net/pokemonchampions/pokemon.shtml).
 - Font: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque), SIL Open Font License.
 
-This is an unofficial fan project and isn't affiliated with, endorsed by or sponsored by Nintendo, Game Freak, Creatures or The Pokémon Company. Pokémon, Pokémon Champions, the type names and the type icons are trademarks of their respective owners.
+This is an unofficial fan project and isn't affiliated with, endorsed by or sponsored by Nintendo, Game Freak, Creatures or The Pokémon Company. Pokémon, Pokémon Champions, the Pokémon images, the type names and the type icons are trademarks and copyrights of their respective owners.

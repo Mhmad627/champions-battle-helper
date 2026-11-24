@@ -83,6 +83,20 @@ button.chip:hover{background:color-mix(in srgb,var(--tc) 34%,var(--panel))}
 .rchip .ti{width:22px;height:22px}
 .rchip .ti + .ti{margin-left:-10px;box-shadow:0 0 0 2px var(--panel)}
 
+/* ---------- Pokémon icons (PokéAPI sprites) ---------- */
+.mi{display:block;flex:none;object-fit:contain}
+.sug .mi-box{width:40px;height:40px;flex:none;display:grid;place-items:center;margin:-6px -4px -6px -6px}
+.sug .mi{width:40px;height:40px}
+.rchip .mi{width:30px;height:30px;margin:0 -2px 0 -2px}
+.rchip .ts{display:flex}
+.plan-id{display:flex;align-items:center;gap:18px}
+.plan-mi{width:96px;height:96px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25))}
+.same button{display:inline-flex;align-items:center;gap:2px}
+.same .mi{width:28px;height:28px;margin-left:-7px}
+.tslot-mi{width:44px;height:44px;margin:-6px -2px}
+.th-mi .mi{width:40px;height:40px;margin:0 auto -2px}
+.each-name .mi{width:36px;height:36px;margin:-6px 0}
+
 /* ---------- Battle plan ---------- */
 .lookup-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
 .plan{background:var(--panel);border-radius:24px;padding:26px;border:1px solid var(--line);position:relative;overflow:hidden}
@@ -168,6 +182,108 @@ details.more .tiles{margin-top:10px}
 .section > h2{margin:0;font-size:clamp(28px,4vw,40px);font-weight:800;font-stretch:80%;letter-spacing:-.015em;line-height:1.05}
 .section > .sub{margin:8px 0 20px;color:var(--muted);max-width:62ch}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:22px}
+
+/* ---------- Team ---------- */
+.team-top{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.team-search{flex:1 1 280px;max-width:520px}
+.team-search .sug{top:calc(100% + 6px)}
+.team-search input:disabled{opacity:.6}
+.team-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+.team-count{font-size:14px;color:var(--faint);font-variant-numeric:tabular-nums}
+.tslots{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tslots:empty{display:none}
+.tslot{display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 6px 6px 8px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.tslot .ts{display:flex;flex:none}
+.tslot .ts .ti{width:20px;height:20px}
+.tslot .ts .ti + .ti{margin-left:-8px;box-shadow:0 0 0 2px var(--panel-2);border-radius:50%}
+.tslot-nm{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.tslot-name{border:0;background:none;padding:0;font-weight:700;font-size:15.5px;line-height:1.2;text-align:left;overflow-wrap:anywhere}
+.tslot-name:hover{text-decoration:underline;text-underline-offset:3px}
+.tslot .nic{margin:3px 0 0;font-size:11.5px}
+.tslot-x{flex:none;width:40px;height:40px;border-radius:10px;border:0;background:none;color:var(--faint);display:grid;place-items:center}
+.tslot-x:hover{background:var(--panel);color:var(--text)}
+.tslot-x svg{width:13px;height:13px}
+.team-empty{margin-top:16px;padding:18px;border-radius:16px;background:var(--bg-2);color:var(--muted)}
+.team-empty p{margin:0 0 12px}
+.verdict{margin:22px 0 0;padding:14px 16px;border-radius:14px;background:var(--bg-2);font-size:16.5px;color:var(--muted)}
+.verdict b{color:var(--text)}
+.trows{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.trow{display:grid;grid-template-columns:132px minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:14px;background:var(--panel-2)}
+.trow-type{display:flex;align-items:center;gap:8px;border:0;background:none;padding:0;font-weight:700;font-size:15.5px;text-align:left;border-radius:10px;min-height:40px}
+button.trow-type span{text-decoration:underline;text-decoration-style:dotted;text-decoration-color:var(--faint);text-underline-offset:3px}
+button.trow-type:hover span{text-decoration-color:var(--focus)}
+.trow-type .ti{width:32px;height:32px;flex:none}
+.trow-who{display:flex;flex-wrap:wrap;gap:5px}
+.who{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:8px;font-size:13.5px;font-weight:650;white-space:nowrap;position:relative}
+.who.bad{background:var(--bad-bg);color:var(--bad)}
+.who.good{background:var(--good-bg);color:var(--good)}
+.who.zero{background:var(--zero);color:var(--zero-text)}
+.who.x4{height:30px;padding:0 11px;font-size:15px;font-weight:800}
+.who.good.x4{background:var(--good-strong);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--good) 55%,transparent)}
+.who.bad.x4{background:var(--bad-strong);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--bad) 55%,transparent)}
+.who.warn::after{content:"!";margin-left:6px;width:16px;height:16px;border-radius:50%;background:var(--focus);color:#1A2140;font-size:11px;font-weight:800;display:grid;place-items:center}
+.trow-sum{font-size:13.5px;color:var(--faint);white-space:nowrap;text-align:right}
+.trow-sum .nores{color:var(--bad);font-weight:700}
+.cover{margin:0 0 6px;color:var(--muted)}
+.cover b{color:var(--text)}
+.cover-gap{margin:0 0 8px;font-size:14.5px;color:var(--faint)}
+.gaps{display:flex;flex-wrap:wrap;gap:6px 10px}
+.team .pair{display:inline-flex;align-items:center;gap:4px}
+.trows + .cover-gap{margin-top:14px}
+.each{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.each li{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:8px 12px 8px 8px;border-radius:14px;background:var(--panel-2)}
+.each-name{display:inline-flex;align-items:center;gap:6px;min-width:150px;min-height:40px;border:0;background:none;padding:0;font-weight:700;font-size:15.5px;text-align:left}
+.each-name .ti{width:22px;height:22px}
+.each-name .ti + .ti{margin-left:-8px;box-shadow:0 0 0 2px var(--panel-2);border-radius:50%}
+.each-name:hover{text-decoration:underline;text-underline-offset:3px}
+.each-best{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.each-best .none{font-size:14px}
+.pair-warn{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:-2px;border-radius:50%;background:var(--focus);color:#1A2140;font-size:11px;font-weight:800}
+.ttable{border-collapse:separate;border-spacing:3px;margin:8px auto 0;font-size:13.5px}
+.ttable th,.ttable td{height:34px;text-align:center;padding:0}
+.ttable thead th{vertical-align:bottom;padding:0 2px 4px;font-weight:650;font-size:12px;color:var(--muted);width:78px;min-width:78px}
+.ttable .th-ic{display:flex;justify-content:center}
+.ttable .th-ic .ti + .ti{margin-left:-6px;box-shadow:0 0 0 2px var(--panel);border-radius:50%}
+.ttable .th-nm{display:block;margin-top:3px;line-height:1.2;overflow-wrap:normal;word-break:normal}
+.ttable tbody th{position:sticky;left:0;z-index:1;background:var(--panel);text-align:left;font-weight:600;white-space:nowrap;padding:0 10px 0 6px;border-radius:9px;box-shadow:2px 0 0 var(--panel);transition:background .12s}
+.ttable tbody th .ti{width:22px;height:22px;vertical-align:-6px;margin-right:6px}
+.ttable td{min-width:44px;border-radius:7px;background:var(--panel-2);font-weight:750;position:relative}
+.ttable td.s{background:var(--good-bg);color:var(--good)} .ttable td.s4{background:var(--good-strong);color:var(--good)}
+.ttable td.r{background:var(--bad-bg);color:var(--bad)} .ttable td.r4{background:var(--bad-strong);color:var(--bad)}
+.ttable td.z{background:var(--zero);color:var(--zero-text)}
+.ttable td.warn::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--focus)}
+.ttable td.tc{cursor:crosshair;transition:opacity .12s}
+.ttable td.tc:focus-visible{outline:2.5px solid var(--focus);outline-offset:1px}
+.ttable.hovering td.tc.dim{opacity:.28}
+.ttable.hovering td.tc.focus{outline:2.5px solid var(--focus);outline-offset:1px;z-index:1}
+.ttable thead th{border-radius:9px;transition:background .12s}
+.ttable thead th.on{background:var(--panel-2)}
+.ttable thead th.on .th-nm{color:var(--text)}
+.ttable tbody th.on{color:var(--text);background:var(--panel-2)}
+.ttable-hint{margin:10px 0 0;font-size:13.5px;color:var(--faint)}
+.team .readout b{color:var(--text)}
+.ro-math{flex-basis:100%;font-size:14px;color:var(--faint)}
+.ttable .cnt{min-width:46px;background:none;color:var(--faint);font-size:12px}
+.ttable td.cnt.cw{color:var(--bad);font-weight:800;font-size:14px}
+.ttable td.cnt.cr{color:var(--good);font-weight:800;font-size:14px;background:none}
+.ttable td.cnt.ci{color:var(--good);font-weight:800;font-size:14px;background:none}
+/* "I'm fighting them": their weaknesses are good for you, their resists bad. */
+.ttable:not(.mine) td.cnt.cw{color:var(--good)}
+.ttable:not(.mine) td.cnt.cr,.ttable:not(.mine) td.cnt.ci{color:var(--bad)}
+/* "I'm using them": your Pokémon taking extra damage is bad (red), resisting is good (green). */
+.ttable.mine td.s{background:var(--bad-bg);color:var(--bad)} .ttable.mine td.s4{background:var(--bad-strong);color:var(--bad)}
+.ttable.mine td.r{background:var(--good-bg);color:var(--good)} .ttable.mine td.r4{background:var(--good-strong);color:var(--good)}
+.ttable-key{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 0;font-size:14px;color:var(--muted)}
+.ttable-key span{display:inline-flex;align-items:center;gap:8px}
+.ttable-key i{display:inline-grid;place-items:center;flex:none;width:24px;height:24px;border-radius:7px;font-style:normal;font-weight:800;font-size:13px}
+.ttable-key .kg{background:var(--good-bg);color:var(--good)} .ttable-key .kb{background:var(--bad-bg);color:var(--bad)}
+.team .more summary{padding-top:18px}
+.team-add{margin-top:12px;height:36px;font-size:14px}
+.team-add[aria-pressed="true"]{border-color:var(--good);color:var(--good)}
+.pop-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pop-list li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 10px}
+.pop-list small{flex-basis:100%;color:var(--faint);font-size:13px}
+.pop-types{color:var(--faint);font-size:13px}
 
 /* ---------- Chart ---------- */
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-bottom:14px}
@@ -346,7 +462,21 @@ dialog.rank::backdrop{background:rgba(8,10,25,.6);backdrop-filter:blur(3px)}
   .search-box > svg{left:17px;width:22px;height:22px}
   .plan,.manual,.card{padding:18px;border-radius:20px}
   .scroller{margin:0 -18px;padding:0 18px 6px}
-  .plan-head .mode{width:100%}
+  .plan-head .mode,.team-top .mode{width:100%}
+  .plan-head > .plan-id{width:100%}
+  .plan-id{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:start}
+  .plan-id > div{display:contents}
+  .plan-mi{grid-column:2;grid-row:1/3;width:72px;height:72px;align-self:center}
+  .plan-id .plan-no{grid-column:1;grid-row:1}
+  .plan-id .plan-name{grid-column:1;grid-row:2;align-self:center}
+  .plan-id .plan-types{grid-column:1/-1;grid-row:3}
+  .plan-id .team-add{grid-column:1/-1;grid-row:4;justify-self:start}
+  .plan-id .plan-note{grid-column:1/-1;grid-row:5}
+  .tslots{grid-template-columns:1fr}
+  .tslot{min-height:48px}
+  .trow{grid-template-columns:minmax(0,1fr) auto;padding:6px 10px 8px 6px}
+  .trow-who{grid-column:1/-1;grid-row:2;padding-left:4px}
+  .each-name{min-width:0}
   .mode button{flex:1;padding:0 8px}
   .tile{min-height:52px;padding:6px 12px 6px 6px}
   .tile .ti{width:36px;height:36px}
