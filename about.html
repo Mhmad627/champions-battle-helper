@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<script>try{document.documentElement.dataset.theme=localStorage.getItem('tcs-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')}catch(e){}</script>
+<script>try{var t=document.documentElement.dataset.theme=localStorage.getItem('tcs-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.querySelector('meta[name=theme-color]').content=t==='light'?'#EDF0F8':'#1A2140'}catch(e){}</script>
 </head>
 <body>
 <header class="top">

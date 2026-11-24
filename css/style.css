@@ -148,7 +148,7 @@ details.more .tiles{margin-top:10px}
 .manual h2{margin:0 0 4px;font-size:19px;font-weight:750;font-stretch:90%}
 .manual > p{margin:0 0 14px;color:var(--muted);font-size:14.5px}
 .types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.type{position:relative;display:flex;align-items:center;gap:6px;height:42px;padding:0 6px;border-radius:12px;border:0;background:color-mix(in srgb,var(--tc) 14%,var(--panel-2));font-weight:600;font-size:14px;font-stretch:87%;text-align:left;transition:background .12s;overflow-wrap:normal;white-space:nowrap}
+.type{position:relative;display:flex;align-items:center;gap:6px;height:42px;padding:0 6px;border-radius:12px;border:0;background:color-mix(in srgb,var(--tc) 14%,var(--panel-2));font-weight:600;font-size:14px;font-stretch:87%;text-align:left;transition:background .12s}
 .type .ti{width:28px;height:28px}
 .type:hover{background:color-mix(in srgb,var(--tc) 26%,var(--panel-2))}
 .type[aria-pressed="true"]{background:var(--tc);color:var(--on,#fff);box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--tc)}

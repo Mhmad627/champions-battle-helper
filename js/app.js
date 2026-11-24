@@ -455,11 +455,14 @@ document.addEventListener('click', e => {
     // From the "Same typing" row: stay where you are, keeping that row at the same spot on screen,
     // so you can tap through related Pokémon. From anywhere else: scroll up to the battle plan.
     const row = mn.closest('.same'), top = row?.getBoundingClientRect().top;
+    const idx = row ? [...row.querySelectorAll('button')].indexOf(mn) : 0;
     setMon(m);
     if (row){
       const now = $('plan').querySelector('.same');
       if (now) scrollBy({ top: now.getBoundingClientRect().top - top, behavior: 'instant' });
-      (now?.querySelector('button') || $('plan').querySelector('.plan-name'))?.focus({ preventScroll: true });
+      // Keep keyboard focus at the same spot in the row (the row's contents change).
+      const btns = now ? [...now.querySelectorAll('button')] : [];
+      (btns[Math.min(idx, btns.length - 1)] || $('plan').querySelector('.plan-name'))?.focus({ preventScroll: true });
     } else { goTo('sec-match'); $('plan').querySelector('.plan-name')?.focus({ preventScroll: true }) }
   } return }
   if (!t.closest('#grid') && focused) clearFocus();
