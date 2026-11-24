@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v22';
+const VERSION = 'cbh-v23';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
@@ -23,15 +23,15 @@ const plain = res => {
 };
 
 self.addEventListener('install', e => {
-  // Download everything first and store it only if every file arrived; if storing fails partway,
-  // delete the new cache, so a half-filled one is never left behind.
-  e.waitUntil(Promise.all(FILES.map(u =>
+  // Download everything first and store it only if every file arrived.
+  e.waitUntil(Promise.all([caches.has(VERSION), ...FILES.map(u =>
     fetch(new Request(u, { cache: 'reload' })).then(res => {
       if (!res.ok) throw new Error(`Could not cache ${u}`);
       return plain(res);
     })
-  )).then(rs => caches.open(VERSION).then(c => Promise.all(rs.map((r, i) => c.put(FILES[i], r)))
-    .catch(err => caches.delete(VERSION).then(() => { throw err }))))   // e.g. storage full: don't keep half
+  )]).then(([existed, ...rs]) => caches.open(VERSION).then(c => Promise.all(rs.map((r, i) => c.put(FILES[i], r)))
+    // e.g. storage full: drop the half-filled cache, but never one that was already there (the running site's)
+    .catch(err => (existed ? Promise.resolve() : caches.delete(VERSION)).then(() => { throw err }))))
     .then(() => self.skipWaiting()));
 });
 
@@ -54,7 +54,9 @@ self.addEventListener('fetch', e => {
       return res;
     }).catch(() => {
       // Offline. /about is stored as about.html (hosts like Cloudflare Pages drop the .html), so try that too.
-      const path = new URL(req.url).pathname.replace(/(.)\/$/, '$1');   // /about/ -> /about
+      const url = new URL(req.url), path = url.pathname.replace(/(.)\/$/, '$1');
+      // /about/ -> /about, so the page's relative links (css/style.css) point to the stored files
+      if (path !== url.pathname) return Response.redirect(new URL(path + url.search, url).href, 302);
       return caches.match(req, { ignoreSearch: true })
         .then(r => r || (/\/[^./]+$/.test(path) ? caches.match(path + '.html') : null))
         .then(r => r || caches.match('./'));

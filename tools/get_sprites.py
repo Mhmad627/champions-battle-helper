@@ -96,11 +96,15 @@ for i in sorted(have):
     h.update(str(i).encode()); h.update(open(os.path.join(OUT, f'{i}.webp'), 'rb').read())
 sw_path = os.path.join(ROOT, 'sw.js')
 sw = open(sw_path, encoding='utf-8').read()
-new = re.sub(r"const IMG = 'cbh-icons-[0-9a-f]+';", f"const IMG = 'cbh-icons-{h.hexdigest()[:8]}';", sw)
+new, n = re.subn(r"const IMG = 'cbh-icons-[0-9a-f]+';", f"const IMG = 'cbh-icons-{h.hexdigest()[:8]}';", sw)
+if not n:
+    sys.exit("Couldn't find the IMG line in sw.js; update the pattern in get_sprites.py.")
 if new != sw:
     # Any change to sw.js makes phones reinstall it, so also bump VERSION: installs must never write into
     # (or, after a failure, delete) the cache the running site is using.
-    new = re.sub(r"const VERSION = 'cbh-v(\d+)';", lambda v: f"const VERSION = 'cbh-v{int(v.group(1)) + 1}';", new, count=1)
+    new, n = re.subn(r"const VERSION = 'cbh-v(\d+)';", lambda v: f"const VERSION = 'cbh-v{int(v.group(1)) + 1}';", new, count=1)
+    if not n:
+        sys.exit("Couldn't find the VERSION line in sw.js, so nothing was changed. Update the pattern in get_sprites.py.")
     open(sw_path, 'w', encoding='utf-8', newline='').write(new)
     print('Icons changed: updated IMG and bumped VERSION in sw.js.')
 
