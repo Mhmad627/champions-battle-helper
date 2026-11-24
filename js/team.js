@@ -28,7 +28,7 @@ function removeFromTeam(i){
 /* Button on the lookup's battle plan (called from renderPlan in app.js). */
 function teamButton(m){
   const on = onTeam(m), full = !on && team.length >= TEAM_MAX;
-  return `<button class="btn team-add" data-addteam="${m.slug}" aria-pressed="${on}"${full ? ' disabled title="The team is full"' : on ? ' title="Tap to take it off the team"' : ''}>${on ? 'On the team' : full ? 'Team is full' : 'Add to team'}</button>`;
+  return `<button class="btn team-add${on ? ' on' : ''}" data-addteam="${m.slug}"${full ? ' disabled title="The team is full"' : on ? ` title="Tap to take it off the team" aria-label="On the team. Remove ${esc(m.name)} from the team"` : ''}>${on ? 'On the team' : full ? 'Team is full' : 'Add to team'}</button>`;
 }
 
 /* ---------- Search box ---------- */
@@ -37,7 +37,7 @@ let tItems = [], tActive = -1;
 function renderTSug(){
   const v = tq.value;
   if (!v.trim()){ closeTSug(); return }
-  tItems = search(v, true); tActive = tItems.length ? 0 : -1;
+  tItems = search(v, true); tActive = tItems.findIndex(r => !onTeam(r.m)); if (tActive < 0) tActive = tItems.length ? 0 : -1;
   tsug.innerHTML = tItems.length ? tItems.map((r, k) => `<li role="option" id="to${k}" data-k="${k}"${onTeam(r.m) ? ' aria-disabled="true"' : ''}><span class="mi-box">${monImg(r.m, 40)}</span><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${onTeam(r.m) ? '<span class="nic">On the team</span>' : r.m.champ ? '' : `<span class="nic">${notIn(r.m, true)}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
     : `<li class="empty">No Pokémon called “${esc(v.trim())}”. Check the spelling?</li>`;
   tsug.hidden = false; tq.setAttribute('aria-expanded', 'true');
@@ -61,8 +61,10 @@ function pickT(k){
 tq.addEventListener('input', renderTSug);
 tq.addEventListener('focus', () => { if (tq.value.trim()) renderTSug() });
 tq.addEventListener('keydown', e => {
-  if (e.key === 'ArrowDown' && tItems.length){ e.preventDefault(); tActive = (tActive + 1) % tItems.length; markTActive() }
-  else if (e.key === 'ArrowUp' && tItems.length){ e.preventDefault(); tActive = (tActive - 1 + tItems.length) % tItems.length; markTActive() }
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && tItems.length){
+    e.preventDefault(); const step = e.key === 'ArrowDown' ? 1 : -1;
+    for (let i = 0; i < tItems.length; i++){ tActive = (tActive + step + tItems.length) % tItems.length; if (!onTeam(tItems[tActive].m)) break }
+    markTActive() }
   else if (e.key === 'Enter'){ e.preventDefault(); if (!tq.value.trim()) return; if (tsug.hidden) renderTSug(); pickT(Math.max(tActive, 0)) }
   else if (e.key === 'Escape'){ if (!pop.hidden){ closePop(); e.stopPropagation(); return } if (!tsug.hidden){ closeTSug(); e.stopPropagation() } else if (tq.value){ tq.value = ''; e.stopPropagation() } }
 });
@@ -216,7 +218,9 @@ function clearTFocus(){
 $('teamOut').addEventListener('mouseover', e => { const td = e.target.closest('td.tc'); if (td) focusTCell(td) });
 // Like the type chart: the highlight goes away as soon as the mouse leaves the table.
 $('teamOut').addEventListener('mouseout', e => { const tbl = e.target.closest('.ttable'); if (tbl && !tbl.contains(e.relatedTarget)) clearTFocus() });
-$('teamOut').addEventListener('click', e => { const td = e.target.closest('td.tc'); if (td) focusTCell(td) });
+// Tapping a square also makes it the table's Tab stop, so keyboard focus comes back to the same place.
+const setTStop = td => { $('teamOut').querySelectorAll('td.tc[tabindex="0"]').forEach(x => x.tabIndex = -1); td.tabIndex = 0 };
+$('teamOut').addEventListener('click', e => { const td = e.target.closest('td.tc'); if (td){ setTStop(td); focusTCell(td) } });
 $('teamOut').addEventListener('focusin', e => { const td = e.target.closest('td.tc'); if (td) focusTCell(td) });
 $('teamOut').addEventListener('keydown', e => {
   const td = e.target.closest('td.tc'); if (!td) return;
