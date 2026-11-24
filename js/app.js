@@ -48,7 +48,7 @@ const sameTypes = (a, b) => a.length === b.length && a.every(t => b.includes(t))
 let sel = [];          // selected types
 let mon = null;        // selected Pokémon (or null when types were picked by hand)
 let mode = 'fight';    // 'fight' = I'm fighting it, 'use' = I'm using it
-let recent = store.get('tcs-recent', []);
+let recent = store.get('tcs-recent', []); if (!Array.isArray(recent)) recent = [];
 
 let push = false;
 function setMon(m){
@@ -76,10 +76,10 @@ function lev(a, b){
   }
   return prev[n];
 }
-function search(q){
+function search(q, monsOnly){
   const f = fold(q); if (!f) return [];
   const out = [];
-  T.forEach(t => { const tl = t.toLowerCase(); if (tl.startsWith(f)) out.push({ kind:'type', t, s: tl === f ? 0 : 1 }) });
+  if (!monsOnly) T.forEach(t => { const tl = t.toLowerCase(); if (tl.startsWith(f)) out.push({ kind:'type', t, s: tl === f ? 0 : 1 }) });
   for (const m of MON){
     let s = null;
     if (m.f === f) s = 0;

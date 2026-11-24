@@ -8,6 +8,7 @@
   --text:#F1F3FA; --muted:#B4BAD8; --faint:#9199C2;
   --good:#3DD68C; --good-bg:rgba(61,214,140,.15); --good-strong:rgba(61,214,140,.32);
   --bad:#FF8A8A; --bad-bg:rgba(255,114,114,.14); --bad-strong:rgba(255,114,114,.3);
+  --good-ink:#B8F5D6; --bad-ink:#FFC2C2; /* text on the -strong backgrounds (AA contrast) */
   --zero:#0C1024; --zero-text:#D9DCEB;
   --focus:#FFD23F;
   --cell:30px; --lab:96px;
@@ -19,6 +20,7 @@
   --text:#1A2140; --muted:#454E75; --faint:#5F688C;
   --good:#0B7040; --good-bg:rgba(17,134,79,.1); --good-strong:rgba(17,134,79,.22);
   --bad:#D23A3A; --bad-bg:rgba(210,58,58,.09); --bad-strong:rgba(210,58,58,.2);
+  --good-ink:#075A33; --bad-ink:#A8201F;
   --zero:#1A2140; --zero-text:#F1F3FA;
   --focus:#C98E00;
   color-scheme:light;
@@ -219,8 +221,9 @@ button.trow-type:hover span{text-decoration-color:var(--focus)}
 .who.good{background:var(--good-bg);color:var(--good)}
 .who.zero{background:var(--zero);color:var(--zero-text)}
 .who.x4{height:30px;padding:0 11px;font-size:15px;font-weight:800}
-.who.good.x4{background:var(--good-strong);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--good) 55%,transparent)}
-.who.bad.x4{background:var(--bad-strong);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--bad) 55%,transparent)}
+.who.good.x4{background:var(--good-strong);color:var(--good-ink);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--good) 55%,transparent)}
+.who.bad.x4{background:var(--bad-strong);color:var(--bad-ink);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--bad) 55%,transparent)}
+button.who{border:0;font:inherit;font-size:13.5px;font-weight:650;cursor:pointer}
 .who.warn::after{content:"!";margin-left:6px;width:16px;height:16px;border-radius:50%;background:var(--focus);color:#1A2140;font-size:11px;font-weight:800;display:grid;place-items:center}
 .trow-sum{font-size:13.5px;color:var(--faint);white-space:nowrap;text-align:right}
 .trow-sum .nores{color:var(--bad);font-weight:700}
@@ -248,8 +251,8 @@ button.trow-type:hover span{text-decoration-color:var(--focus)}
 .ttable tbody th{position:sticky;left:0;z-index:1;background:var(--panel);text-align:left;font-weight:600;white-space:nowrap;padding:0 10px 0 6px;border-radius:9px;box-shadow:2px 0 0 var(--panel);transition:background .12s}
 .ttable tbody th .ti{width:22px;height:22px;vertical-align:-6px;margin-right:6px}
 .ttable td{min-width:44px;border-radius:7px;background:var(--panel-2);font-weight:750;position:relative}
-.ttable td.s{background:var(--good-bg);color:var(--good)} .ttable td.s4{background:var(--good-strong);color:var(--good)}
-.ttable td.r{background:var(--bad-bg);color:var(--bad)} .ttable td.r4{background:var(--bad-strong);color:var(--bad)}
+.ttable td.s{background:var(--good-bg);color:var(--good)} .ttable td.s4{background:var(--good-strong);color:var(--good-ink)}
+.ttable td.r{background:var(--bad-bg);color:var(--bad)} .ttable td.r4{background:var(--bad-strong);color:var(--bad-ink)}
 .ttable td.z{background:var(--zero);color:var(--zero-text)}
 .ttable td.warn::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--focus)}
 .ttable td.tc{cursor:crosshair;transition:opacity .12s}
@@ -271,8 +274,8 @@ button.trow-type:hover span{text-decoration-color:var(--focus)}
 .ttable:not(.mine) td.cnt.cw{color:var(--good)}
 .ttable:not(.mine) td.cnt.cr,.ttable:not(.mine) td.cnt.ci{color:var(--bad)}
 /* "I'm using them": your Pokémon taking extra damage is bad (red), resisting is good (green). */
-.ttable.mine td.s{background:var(--bad-bg);color:var(--bad)} .ttable.mine td.s4{background:var(--bad-strong);color:var(--bad)}
-.ttable.mine td.r{background:var(--good-bg);color:var(--good)} .ttable.mine td.r4{background:var(--good-strong);color:var(--good)}
+.ttable.mine td.s{background:var(--bad-bg);color:var(--bad)} .ttable.mine td.s4{background:var(--bad-strong);color:var(--bad-ink)}
+.ttable.mine td.r{background:var(--good-bg);color:var(--good)} .ttable.mine td.r4{background:var(--good-strong);color:var(--good-ink)}
 .ttable-key{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 0;font-size:14px;color:var(--muted)}
 .ttable-key span{display:inline-flex;align-items:center;gap:8px}
 .ttable-key i{display:inline-grid;place-items:center;flex:none;width:24px;height:24px;border-radius:7px;font-style:normal;font-weight:800;font-size:13px}
@@ -315,15 +318,15 @@ button.trow-type:hover span{text-decoration-color:var(--focus)}
 .combo-h .ti{width:calc(var(--cell) - 12px);height:calc(var(--cell) - 12px)}
 .combo-h .ti + .ti{margin-left:-6px}
 .combo{display:grid;place-items:center;border-radius:6px;font-weight:800;font-size:13px;background:var(--panel-2);color:var(--faint);cursor:crosshair}
-.combo.x4{background:var(--good-strong);color:var(--good)} .combo.x2{background:var(--good-bg);color:var(--good)}
-.combo.xh{background:var(--bad-bg);color:var(--bad)} .combo.xq{background:var(--bad-strong);color:var(--bad)}
+.combo.x4{background:var(--good-strong);color:var(--good-ink)} .combo.x2{background:var(--good-bg);color:var(--good)}
+.combo.xh{background:var(--bad-bg);color:var(--bad)} .combo.xq{background:var(--bad-strong);color:var(--bad-ink)}
 .combo.x0{background:var(--zero);color:var(--zero-text)}
 .readout{margin-top:14px;min-height:50px;display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:10px 14px;border-radius:14px;background:var(--bg-2);font-size:15px;color:var(--muted)}
 .readout strong{color:var(--text)}
 .mult{display:inline-grid;place-items:center;height:28px;min-width:44px;padding:0 8px;border-radius:8px;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
-.m4{background:var(--good-strong);color:var(--good)} .m2{background:var(--good-bg);color:var(--good)}
+.m4{background:var(--good-strong);color:var(--good-ink)} .m2{background:var(--good-bg);color:var(--good)}
 .m1{background:var(--panel-2);color:var(--muted)}
-.mh{background:var(--bad-bg);color:var(--bad)} .mq{background:var(--bad-strong);color:var(--bad)}
+.mh{background:var(--bad-bg);color:var(--bad)} .mq{background:var(--bad-strong);color:var(--bad-ink)}
 .m0{background:var(--zero);color:var(--zero-text)}
 .swipe{display:none}
 

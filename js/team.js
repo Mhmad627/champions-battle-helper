@@ -4,7 +4,7 @@
 const TEAM_MAX = 6;
 const SAMPLE_TEAM = ['garchomp', 'incineroar', 'kingambit', 'primarina', 'dragonite', 'sinistcha'];
 const savedTeam = store.get('tcs-team', []);   // ignore anything that isn't a list of names
-let team = (Array.isArray(savedTeam) ? savedTeam : []).map(s => BY_SLUG.get(s)).filter(Boolean).slice(0, TEAM_MAX);
+let team = [...new Set(Array.isArray(savedTeam) ? savedTeam : [])].map(s => BY_SLUG.get(s)).filter(Boolean).slice(0, TEAM_MAX);
 let tableOpen = true;                            // remembers if the big table was closed
 let tmode = store.get('tcs-team-mode', 'use') === 'fight' ? 'fight' : 'use';
 
@@ -37,7 +37,7 @@ let tItems = [], tActive = -1;
 function renderTSug(){
   const v = tq.value;
   if (!v.trim()){ closeTSug(); return }
-  tItems = search(v).filter(r => r.kind === 'mon'); tActive = tItems.length ? 0 : -1;
+  tItems = search(v, true); tActive = tItems.length ? 0 : -1;
   tsug.innerHTML = tItems.length ? tItems.map((r, k) => `<li role="option" id="to${k}" data-k="${k}"${onTeam(r.m) ? ' aria-disabled="true"' : ''}><span class="mi-box">${monImg(r.m, 40)}</span><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${onTeam(r.m) ? '<span class="nic">On the team</span>' : r.m.champ ? '' : `<span class="nic">${notIn(r.m, true)}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
     : `<li class="empty">No Pokémon called “${esc(v.trim())}”. Check the spelling?</li>`;
   tsug.hidden = false; tq.setAttribute('aria-expanded', 'true');
@@ -89,13 +89,14 @@ const stopWords = r => [r.rs.length ? `${r.rs.length} ${r.rs.length === 1 ? 'res
 // Which members' own types hit a defending type super effectively (STAB).
 const stabHitters = d => team.filter(m => m.types.some(s => mult(s, d) === 2));
 
-const who = (p, good) => `<span class="who ${p.x === 0 ? 'zero' : p.x > 1 ? (good ? 'good' : 'bad') : (good ? 'bad' : 'good')}${p.x >= 4 ? ' x4' : ''}${p.warn.length ? ' warn' : ''}"${p.warn.length ? ` title="Unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}"` : ''}>${esc(p.m.name)} ${fmt(p.x)}${p.warn.length ? `<span class="sr">, unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}</span>` : ''}</span>`;
+// With an ability warning the badge is a button that opens the type's pop-up, which names the ability (phones have no tooltips).
+const who = (p, good, t) => `<${p.warn.length && t ? `button data-twhy="${t}"` : 'span'} class="who ${p.x === 0 ? 'zero' : p.x > 1 ? (good ? 'good' : 'bad') : (good ? 'bad' : 'good')}${p.x >= 4 ? ' x4' : ''}${p.warn.length ? ' warn' : ''}"${p.warn.length ? ` title="Unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}"` : ''}>${esc(p.m.name)} ${fmt(p.x)}${p.warn.length ? `<span class="sr">, unless it has ${esc(joinList(p.warn.map(w => w.ab), 'or'))}</span>` : ''}</${p.warn.length && t ? 'button' : 'span'}>`;
 const typeBtn = t => `<button class="trow-type" data-twhy="${t}" aria-label="${t}: show the matchup against each Pokémon">${icon(t, 32)}<span>${t}</span></button>`;
 const typeLabel = t => `<span class="trow-type">${icon(t, 32)}<span>${t}</span></span>`;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 function rows(list, good, sumFn){
-  return `<ul class="trows">${list.map(r => `<li class="trow">${typeBtn(r.t)}<span class="trow-who">${r.weak.map(p => who(p, good)).join('')}</span><span class="trow-sum">${sumFn(r)}</span></li>`).join('')}</ul>`;
+  return `<ul class="trows">${list.map(r => `<li class="trow">${typeBtn(r.t)}<span class="trow-who">${r.weak.map(p => who(p, good, r.t)).join('')}</span><span class="trow-sum">${sumFn(r)}</span></li>`).join('')}</ul>`;
 }
 function smallTiles(list, cls, txFn){
   return `<div class="tiles small">${list.map(r => `<button class="tile ${cls}" data-twhy="${r.t}" aria-label="${r.t}: ${esc(txFn(r))}. Show each Pokémon.">${icon(r.t, 32)}<span><span class="tn">${r.t}</span><span class="tx">${esc(txFn(r))}</span></span></button>`).join('')}</div>`;
@@ -128,7 +129,9 @@ function useView(A, n){
 
 function fightView(A, n){
   let h = '';
-  const score = r => r.weak.length * 2 + r.weak.filter(p => p.x >= 4).length - r.res.length - r.imm.length;
+  // Each Pokémon it hits super effectively: +2 (+1 more at 4×). Each one that resists: -1. Each immune one: -2,
+  // on purpose: a move that does nothing is worse than one that's resisted.
+  const score = r => r.weak.length * 2 + r.weak.filter(p => p.x >= 4).length - r.rs.length - r.imm.length * 2;
   const hit = A.filter(r => r.weak.length).sort((a, b) => score(b) - score(a) || b.weak.length - a.weak.length || idx(a.t) - idx(b.t));
   const top = hit[0];
   h += `<p class="verdict">${top
