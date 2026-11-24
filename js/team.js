@@ -3,7 +3,9 @@
 
 const TEAM_MAX = 6;
 const SAMPLE_TEAM = ['garchomp', 'incineroar', 'kingambit', 'primarina', 'dragonite', 'sinistcha'];
-let team = store.get('tcs-team', []).map(s => BY_SLUG.get(s)).filter(Boolean).slice(0, TEAM_MAX);
+const savedTeam = store.get('tcs-team', []);   // ignore anything that isn't a list of names
+let team = (Array.isArray(savedTeam) ? savedTeam : []).map(s => BY_SLUG.get(s)).filter(Boolean).slice(0, TEAM_MAX);
+let tableOpen = true;                            // remembers if the big table was closed
 let tmode = store.get('tcs-team-mode', 'use') === 'fight' ? 'fight' : 'use';
 
 const saveTeam = () => store.set('tcs-team', team.map(m => m.slug));
@@ -62,7 +64,7 @@ tq.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown' && tItems.length){ e.preventDefault(); tActive = (tActive + 1) % tItems.length; markTActive() }
   else if (e.key === 'ArrowUp' && tItems.length){ e.preventDefault(); tActive = (tActive - 1 + tItems.length) % tItems.length; markTActive() }
   else if (e.key === 'Enter'){ e.preventDefault(); if (!tq.value.trim()) return; if (tsug.hidden) renderTSug(); pickT(Math.max(tActive, 0)) }
-  else if (e.key === 'Escape'){ if (!pop.hidden) closePop(); if (!tsug.hidden){ closeTSug(); e.stopPropagation() } else if (tq.value){ tq.value = ''; e.stopPropagation() } }
+  else if (e.key === 'Escape'){ if (!pop.hidden){ closePop(); e.stopPropagation(); return } if (!tsug.hidden){ closeTSug(); e.stopPropagation() } else if (tq.value){ tq.value = ''; e.stopPropagation() } }
 });
 tsug.addEventListener('mousedown', e => e.preventDefault());
 tsug.addEventListener('click', e => { const li = e.target.closest('[data-k]'); if (li) pickT(+li.dataset.k) });
@@ -167,10 +169,10 @@ function table(A){
     const w = p.warn.length ? `, unless it has ${joinList(p.warn.map(x => x.ab), 'or')}` : '';
     return `<td class="tc ${c}${w ? ' warn' : ''}" data-r="${ri}" data-c="${ci}" tabindex="${ri || ci ? -1 : 0}" aria-label="${r.t} move against ${esc(p.m.name)}: ${fmt(p.x)}, ${WORD(p.x).toLowerCase()}${esc(w)}">${short(p.x) ?? fmt(p.x).replace('×', '')}</td>`;
   }).join('')}<td class="cnt cw">${r.weak.length || ''}</td><td class="cnt cr">${r.rs.length || ''}</td><td class="cnt ci">${r.imm.length || ''}</td></tr>`).join('');
-  return `<details class="more" open><summary>Every move type against every Pokémon</summary>
+  return `<details class="more team-table"${tableOpen ? ' open' : ''}><summary>Every move type against every Pokémon</summary>
     <p class="ttable-key">${tmode === 'use'
-      ? `<span><i class="kb">2</i>Red: bad for your team. That Pokémon takes extra damage.</span><span><i class="kg">½</i>Green: good for your team. It resists or is immune.</span>`
-      : `<span><i class="kg">2</i>Green: good for you. That move does extra damage.</span><span><i class="kb">½</i>Red: bad for you. It's resisted or does nothing.</span>`}</p>
+      ? `<span><i class="kb">2</i>Red: bad for your team. That Pokémon takes extra damage.</span><span><i class="kg">½</i>Green: good for your team. It resists.</span><span><i class="k0">0</i>Dark: no effect at all.</span>`
+      : `<span><i class="kg">2</i>Green: good for you. That move does extra damage.</span><span><i class="kb">½</i>Red: bad for you. It's resisted.</span><span><i class="k0">0</i>Dark: no effect at all.</span>`}</p>
     <p class="ttable-hint">Hover or tap a square to read it. Use the arrow keys to move around.</p>
     <div class="scroller"><table class="ttable${tmode === 'use' ? ' mine' : ''}"><caption class="sr">Damage each move type does to each Pokémon on the team</caption>
     <thead><tr><td></td>${head}<th scope="col" class="cnt">Weak</th><th scope="col" class="cnt">Resist</th><th scope="col" class="cnt">Immune</th></tr></thead><tbody>${body}</tbody></table></div>
@@ -179,6 +181,8 @@ function table(A){
 
 // In "I'm using them", colours are from your team's side: taking extra damage is red, resisting is green.
 const mineCls = x => x === 0 ? 'm0' : x >= 4 ? 'mq' : x > 1 ? 'mh' : x <= .25 ? 'm4' : x < 1 ? 'm2' : 'm1';
+
+$('teamOut').addEventListener('toggle', e => { if (e.target.matches('details.team-table')) tableOpen = e.target.open }, true);
 
 /* Table: hover, tap or arrow-key a square to highlight its row and column and explain it (like the type chart). */
 let tFocus = null;

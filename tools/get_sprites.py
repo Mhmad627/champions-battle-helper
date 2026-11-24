@@ -29,7 +29,8 @@ def fetch(pid):
     if os.path.exists(path):
         return path
     if '--offline' in sys.argv:
-        return None
+        # Not cached: keep an icon made on an earlier run rather than dropping it.
+        return 'keep' if os.path.exists(os.path.join(OUT, f'{pid}.webp')) else None
     req = urllib.request.Request(URL.format(pid), headers={'User-Agent': 'sprite-icon-builder'})
     err = None
     for attempt in range(3):
@@ -54,6 +55,8 @@ def fetch(pid):
 have, missing = [], []
 for n, pid in enumerate(ids, 1):
     path = fetch(pid)
+    if path == 'keep':
+        have.append(pid); continue
     if not path:
         missing.append(pid); continue
     try:

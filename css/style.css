@@ -276,6 +276,7 @@ button.trow-type:hover span{text-decoration-color:var(--focus)}
 .ttable-key{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 0;font-size:14px;color:var(--muted)}
 .ttable-key span{display:inline-flex;align-items:center;gap:8px}
 .ttable-key i{display:inline-grid;place-items:center;flex:none;width:24px;height:24px;border-radius:7px;font-style:normal;font-weight:800;font-size:13px}
+.ttable-key .k0{background:var(--zero);color:var(--zero-text)}
 .ttable-key .kg{background:var(--good-bg);color:var(--good)} .ttable-key .kb{background:var(--bad-bg);color:var(--bad)}
 .team .more summary{padding-top:18px}
 .team-add{margin-top:12px;height:36px;font-size:14px}
@@ -473,6 +474,7 @@ dialog.rank::backdrop{background:rgba(8,10,25,.6);backdrop-filter:blur(3px)}
   .plan-id .team-add{grid-column:1/-1;grid-row:4;justify-self:start}
   .plan-id .plan-note{grid-column:1/-1;grid-row:5}
   .tslots{grid-template-columns:1fr}
+  .ttable td.tc{height:40px}
   .team-add{height:40px}
   .tslot-name{min-height:40px}
   .tslot{min-height:48px}
