@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v16';
+const VERSION = 'cbh-v17';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
@@ -14,8 +14,16 @@ const FILES = [
   ...TYPES.map(t => `assets/types/${t}.webp`)
 ];
 
+// Some hosts redirect about.html to /about. Browsers won't show a stored redirect as a page, so keep a plain copy.
+const plain = res => res.redirected ? res.blob().then(b => new Response(b, { status: res.status, statusText: res.statusText, headers: res.headers })) : Promise.resolve(res);
+
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => Promise.all(FILES.map(u =>
+    fetch(new Request(u, { cache: 'reload' })).then(res => {
+      if (!res.ok) throw new Error(`Could not cache ${u}`);
+      return plain(res).then(r => c.put(u, r));
+    })
+  ))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -31,8 +39,9 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).then(res => {
-      const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('index.html'))));
+      if (res.ok) { const copy = res.clone(); plain(copy).then(r => caches.open(VERSION).then(c => c.put(req, r))); }
+      return res;
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./'))));
     return;
   }
   e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
