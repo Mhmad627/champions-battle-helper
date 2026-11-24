@@ -22,7 +22,7 @@
   --bad:#D23A3A; --bad-bg:rgba(210,58,58,.09); --bad-strong:rgba(210,58,58,.2);
   --good-ink:#075A33; --bad-ink:#A8201F;
   --zero:#1A2140; --zero-text:#F1F3FA;
-  --focus:#C98E00;
+  --focus:#946800;
   color-scheme:light;
 }
 *{box-sizing:border-box}
