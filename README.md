@@ -42,7 +42,7 @@ To host it, upload the folder to any static host (GitHub Pages, Netlify, Vercel,
   python tools/build_data.py            # download the latest data and rebuild
   python tools/build_data.py --offline  # rebuild from the cached download in tools/.cache
   ```
-- **Champions roster** (`data/champions.js`) is edited by hand. It has:
+- **Champions roster** (`data/champions.js`) is mostly kept up to date by a weekly check (below); `notes` and special cases in `notForms` are edited by hand. It has:
   - `species`: National Dex numbers of the Pokémon in the game
   - `megas`: the Mega Evolutions in the game
   - `notForms`: forms of those Pokémon that aren't in the game (like Galarian Farfetch'd)

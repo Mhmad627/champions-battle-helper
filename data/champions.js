@@ -1,6 +1,9 @@
-// Pokémon available in Pokémon Champions. Hand-maintained: edit this file when the roster changes.
+// Pokémon available in Pokémon Champions.
 // Source: Serebii's "Available Pokémon" page (serebii.net/pokemonchampions/pokemon.shtml), read 2026-11-24.
-// Pokémon not listed here still appear on the site, marked "Not in Champions yet".
+// Pokémon not listed here still appear on the site, marked "Not in Pokémon Champions yet".
+//
+// tools/check_roster.py (run weekly by GitHub Actions) rewrites species, megas, and the notForms
+// entries for regional and regular forms. notes and any other notForms entries are hand-edited.
 //
 // species: National Dex numbers. Every non-Mega form of a listed species counts as available
 //          (regional forms included), except the forms named in notForms.

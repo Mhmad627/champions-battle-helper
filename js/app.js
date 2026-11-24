@@ -29,6 +29,8 @@ const WORD = x => x === 0 ? 'No effect' : x > 1 ? 'Super effective' : x < 1 ? 'N
 const MON = window.POKEMON.map(([name, no, types, abil, hidden, key], i) => ({ i, name, no, types, abil, hidden, key, f: fold(name), slug: fold(name).replace(/ /g, '-') }));
 const CH_SPECIES = new Set((window.CHAMPIONS || {}).species || []), CH_MEGAS = new Set((window.CHAMPIONS || {}).megas || []);
 const CH_NOT = new Set((window.CHAMPIONS || {}).notForms || []), CH_NOTES = (window.CHAMPIONS || {}).notes || {};
+// Forms listed in notForms aren't coming, so they don't get "yet".
+const notIn = m => CH_NOT.has(m.name) ? 'Not in Pokémon Champions' : 'Not in Pokémon Champions yet';
 MON.forEach(m => m.champ = m.name.startsWith('Mega ') ? CH_MEGAS.has(m.name) : CH_SPECIES.has(m.no) && !CH_NOT.has(m.name));
 const BY_SLUG = new Map(MON.map(m => [m.slug, m]));
 const AB = window.ABILITIES.map(([name, gen, desc, sum]) => ({ name, gen, desc, sum }));
@@ -204,7 +206,7 @@ function renderPlan(){
   const abs = abilitiesOf(mon);
 
   let h = `<div class="plan-head"><div>
-      ${mon ? `<span class="plan-no">#${String(mon.no).padStart(4, '0')}${mon.champ ? '' : '<span class="nic">Not in Pokémon Champions yet</span>'}</span>` : ''}
+      ${mon ? `<span class="plan-no">#${String(mon.no).padStart(4, '0')}${mon.champ ? '' : `<span class="nic">${notIn(mon)}</span>`}</span>` : ''}
       <h2 class="plan-name" tabindex="-1">${esc(name)}</h2>
       <div class="plan-types">${sel.map(t => chip(t, 'lg')).join('')}</div>
       ${mon && CH_NOTES[mon.name] ? `<p class="plan-note">${esc(CH_NOTES[mon.name])}</p>` : ''}
@@ -238,7 +240,7 @@ function renderPlan(){
   h += `<details class="more"><summary>Normal damage (1×) from ${neutral.length} types</summary>${tiles(neutral, 'small')}</details>`;
 
   const same = MON.filter(m => sameTypes(m.types, sel) && m !== mon);
-  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}"${m.champ ? '' : ' class="out" title="Not in Pokémon Champions yet"'}>${esc(m.name)}${m.champ ? '' : '<span class="sr"> (not in Champions yet)</span>'}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
+  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${esc(m.name)}${m.champ ? '' : `<span class="sr"> (${notIn(m).toLowerCase()})</span>`}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
   el.innerHTML = h;
 }
 

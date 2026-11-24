@@ -32,7 +32,7 @@ SW = ROOT / 'sw.js'
 REGIONAL = {'a': 'Alolan', 'g': 'Galarian', 'h': 'Hisuian', 'p': 'Paldean'}
 MEGA_SUFFIX = {'m': '', 'mx': ' X', 'my': ' Y', 'mz': ' Z'}
 # Sprite suffixes for forms that aren't separate entries on the site (e.g. 'e' = Eternal Flower Floette).
-IGNORED_SUFFIXES = {'e'}
+IGNORED_FORMS = {'670-e'}
 
 # Hand-edited. Use these to settle "Check by hand" warnings so they stop coming back:
 # Serebii's name for a Mega -> the name in data/pokemon.js, when the two differ.
@@ -75,7 +75,7 @@ def parse_serebii(page, mons):
     species, plain, megas, regional, unknown = set(), set(), set(), set(), set()
     for no, suf, alt in SPRITE.findall(page):
         no, alt = int(no), html.unescape(alt).strip()
-        if not suf or suf in IGNORED_SUFFIXES:
+        if not suf or f'{no}-{suf}' in IGNORED_FORMS:
             species.add(no)
             plain.add(no)  # the regular form is listed
         elif suf in MEGA_SUFFIX and alt.startswith('Mega '):
@@ -164,11 +164,14 @@ def main():
         if prefix(n):
             if (no, prefix(n)) not in s_regional:
                 want_not.add(n)
-        elif n in regular and no not in s_plain:
+        elif n in regular and no not in s_plain and any(rno == no for rno, _ in s_regional):
             want_not.add(n)
     # Keep the existing order; drop entries that no longer apply and add new ones at the end.
-    new_not = [n for n in c_not if n not in managed or n in want_not] + sorted(want_not - set(c_not))
-    forms_now_in = sorted(n for n in c_not if n in managed and n not in want_not)
+    # Entries for Pokémon that left the roster entirely are kept (they don't matter until it returns).
+    dex_of = dict(mons)
+    gone = {n for n in c_not if dex_of.get(n) not in s_species}
+    new_not = [n for n in c_not if n not in managed or n in want_not or n in gone] + sorted(want_not - set(c_not))
+    forms_now_in = sorted(n for n in c_not if n in managed and n not in want_not and n not in gone)
     forms_now_out = sorted(want_not - set(c_not))
 
     bad_megas = sorted(m for m in s_megas if m not in site_names)
@@ -208,7 +211,8 @@ def main():
                if changed else 'No roster changes.')
     if warnings:
         summary += '\n\n**Check by hand**\n' + '\n'.join(f'- {w}' for w in warnings)
-    summary += f'\n\nSource: {URL}\nNotes (like the Floette one) aren\'t updated automatically; check them before merging.'
+    summary += (f'\n\nSource: {URL}\nNotes (like the Floette one) aren\'t updated automatically; check them before merging. '
+                'If you changed sw.js VERSION on main since this was opened, make sure it still goes up after merging.')
     print(summary)
     if args.summary:
         Path(args.summary).write_text(summary + '\n', encoding='utf-8')

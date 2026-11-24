@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v2';
+const VERSION = 'cbh-v3';
 const TYPES = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
 const FILES = [
   './', 'index.html', 'about.html', 'manifest.webmanifest',
@@ -12,7 +12,7 @@ const FILES = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
