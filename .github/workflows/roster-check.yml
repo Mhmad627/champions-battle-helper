@@ -1,6 +1,7 @@
 # Weekly check of the Champions roster against Serebii's list.
 # If anything changed, it opens (or updates) a pull request for you to review and merge.
 # If Serebii's page can't be read, the run fails and GitHub emails you; nothing is changed.
+# GitHub pauses scheduled runs after 60 days with no commits (it emails you first); re-enable it from the Actions tab.
 # Needs: Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests".
 name: Weekly roster check
 

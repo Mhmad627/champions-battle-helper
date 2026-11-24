@@ -48,7 +48,7 @@ To host it, upload the folder to any static host (GitHub Pages, Netlify, Vercel,
   - `notForms`: forms of those Pokémon that aren't in the game (like Galarian Farfetch'd)
   - `notes`: short notes shown under a Pokémon's name
 
-  A GitHub Action (`.github/workflows/roster-check.yml`) compares this file with [Serebii's list](https://www.serebii.net/pokemonchampions/pokemon.shtml) every Monday. If anything changed, it opens a pull request listing what was added or removed. `notes` are never changed automatically. (If you fork the repo, turn on Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".) You can run the same check yourself:
+  A GitHub Action (`.github/workflows/roster-check.yml`) compares this file with [Serebii's list](https://www.serebii.net/pokemonchampions/pokemon.shtml) every Monday. If anything changed, it opens a pull request listing what was added or removed. `notes` are never changed automatically. (If you fork the repo, turn on Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".) GitHub pauses scheduled runs after 60 days without commits; turn it back on from the Actions tab if that happens. You can run the same check yourself:
   ```sh
   python tools/check_roster.py           # show differences
   python tools/check_roster.py --write   # update data/champions.js and bump the sw.js VERSION

@@ -45,6 +45,14 @@ KNOWN_FORMS = set()
 SPRITE = re.compile(r'/pokemonhome/pokemon/small/(\d+)(?:-([a-z0-9]+))?\.png"[^>]*?alt="([^"]*?) Image"')
 
 
+def region_of(name):
+    """'Galarian' for 'Galarian Slowbro' and 'Standard Galarian Darmanitan'; None for regular forms and Megas."""
+    if name.startswith('Mega '):
+        return None
+    m = re.search(r'\b(' + '|'.join(REGIONAL.values()) + r')\b', name)
+    return m.group(1) if m else None
+
+
 def fail(msg):
     print(f'Roster check failed: {msg}\nNothing was changed.', file=sys.stderr)
     sys.exit(2)
@@ -71,7 +79,7 @@ def parse_serebii(page, mons):
     # Sprite suffixes are short codes that Serebii reuses (e.g. '-m' is Mega, but also Midnight Lycanroc;
     # '-h' is Hisuian, but also Heat Rotom). So a suffix only counts as a Mega when the name says "Mega",
     # and as a regional form only when the site really has that regional form. Anything else is flagged.
-    site_regional = {(no, p) for n, no in mons for p in REGIONAL.values() if n.startswith(p + ' ')}
+    site_regional = {(no, region_of(n)) for n, no in mons if region_of(n)}
     species, plain, megas, regional, unknown = set(), set(), set(), set(), set()
     for no, suf, alt in SPRITE.findall(page):
         no, alt = int(no), html.unescape(alt).strip()
@@ -153,8 +161,7 @@ def main():
     # notForms entries this script manages: regional forms, and the regular form of each Pokémon.
     # A regional form Serebii doesn't list, or a regular form when Serebii only lists a regional
     # one (e.g. only Hisuian Typhlosion), goes in notForms. Other entries are left alone.
-    def prefix(n):
-        return next((p for p in REGIONAL.values() if n.startswith(p + ' ')), None)
+    prefix = region_of
     regular = set(name_of.values())
     managed = regular | {n for n, _ in mons if prefix(n)}
     want_not = set()
@@ -181,6 +188,9 @@ def main():
         fail(f'{len(bad_megas)} of {len(s_megas)} Mega names on the page don\'t match data/pokemon.js '
              f'(e.g. {", ".join(bad_megas[:3])}); the page format has probably changed')
     s_megas -= set(bad_megas)
+    if bad_megas:
+        # Serebii may have just renamed some Megas, so don't remove any this time; the warning asks for a check.
+        s_megas |= c_megas
     added = sorted(s_species - c_species)
     removed = sorted(c_species - s_species)
     megas_added = sorted(s_megas - c_megas)
@@ -198,7 +208,7 @@ def main():
     section('Forms not available', forms_now_out)
     warnings = []
     if bad_megas:
-        warnings.append('These Megas on Serebii have no matching name in data/pokemon.js, so they were left out: '
+        warnings.append('These Megas on Serebii have no matching name in data/pokemon.js, so they were left out (and no Megas were removed this run, in case Serebii renamed some): '
                         + ', '.join(bad_megas) + '. If they are new, re-run tools/build_data.py. If the site just names '
                         'them differently, add them to MEGA_ALIASES in tools/check_roster.py.')
     if unknown:

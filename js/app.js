@@ -100,7 +100,7 @@ function renderSug(){
   sugItems = search(v); sugActive = sugItems.length ? 0 : -1;
   sug.innerHTML = sugItems.length ? sugItems.map((r, k) => r.kind === 'type'
     ? `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${icon(r.t, 24)}</span><span class="nm">${r.t}</span><span class="kind">type</span></li>`
-    : `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${r.m.champ ? '' : '<span class="nic">Not in Champions</span>'}<span class="no">#${r.m.no}</span></li>`).join('')
+    : `<li role="option" id="o${k}" data-k="${k}"><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${r.m.champ ? '' : `<span class="nic">${CH_NOT.has(r.m.name) ? 'Not in Champions' : 'Not in Champions yet'}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
     : `<li class="empty">No Pokémon or type called “${esc(v.trim())}”. Check the spelling?</li>`;
   sug.hidden = false; q.setAttribute('aria-expanded', 'true');
   markActive();
@@ -240,7 +240,7 @@ function renderPlan(){
   h += `<details class="more"><summary>Normal damage (1×) from ${neutral.length} types</summary>${tiles(neutral, 'small')}</details>`;
 
   const same = MON.filter(m => sameTypes(m.types, sel) && m !== mon);
-  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${esc(m.name)}${m.champ ? '' : `<span class="sr"> (${notIn(m).toLowerCase()})</span>`}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
+  h += `<div class="same">${same.length ? `${mon ? 'Same typing:' : 'Pokémon with this typing:'} ${same.map(m => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${esc(m.name)}${m.champ ? '' : `<span class="sr"> (${notIn(m).replace('Not in', 'not in')})</span>`}</button>`).join('')}` : (mon ? '' : 'No Pokémon has this exact typing.')}</div>`;
   el.innerHTML = h;
 }
 
