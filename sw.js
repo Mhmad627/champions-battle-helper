@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v44';
+const VERSION = 'cbh-v45';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';

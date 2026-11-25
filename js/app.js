@@ -250,7 +250,7 @@ function renderPlan(){
   if (mon) h += megaSec(mon);
   // Status and effects its types make it immune to
   const imm = immunities(sel);
-  if (imm.length) h += `<div class="plan-sec"><h3>${mode === 'fight' ? "Don't try" : "It's safe from"} <small>its ${sel.length > 1 ? 'types make' : 'type makes'} it immune</small></h3><ul class="imm">${imm.map(i => `<li>${chip(i.t)}<span>${i.say}</span></li>`).join('')}</ul></div>`;
+  if (imm.length) h += `<div class="plan-sec"><h3>${mode === 'fight' ? "What doesn't work on it" : "It's safe from"} <small>because of its ${sel.length > 1 ? 'types' : 'type'}</small></h3><ul class="imm">${imm.map(i => `<li>${chip(i.t)}<span>${i.say}</span></li>`).join('')}</ul></div>`;
 
   h += `<details class="more"><summary>Normal damage (1×) from ${neutral.length} types</summary>${tiles(neutral, 'small')}</details>`;
 
@@ -262,29 +262,36 @@ function renderPlan(){
 /* ---------- Mega Evolution and type immunities (lookup card) ---------- */
 const REGIONAL = /^(Alolan|Galarian|Hisuian|Paldean) /;
 const MEGA_RE = /^(Mega|Primal) /;
-// What changes when it Mega Evolves: types, ability, and which move types are super effective on it.
+const NO_MEGA = new Set(["Ash's Greninja"]);   // other forms that can't Mega Evolve
+const canMega = x => !MEGA_RE.test(x.name) && !REGIONAL.test(x.name) && !NO_MEGA.has(x.name);
+// A Pokémon button like the ones in "Same typing": dimmed and labelled when it isn't in Champions.
+const monBtn = (x, size) => `<button class="rchip${x.champ ? '' : ' out'}" data-mon="${x.slug}"${x.champ ? '' : ` title="${notIn(x)}"`}>${monImg(x, size)}${esc(x.name)}${x.champ ? '' : `<span class="sr"> (${notIn(x).replace('Not in', 'not in')})</span>`}</button>`;
+// What changes when it Mega Evolves: types, ability, and how each move type now hits it.
 function megaSec(m){
-  const into = MEGA_RE.test(m.name) ? null : MON.filter(x => x.no === m.no && MEGA_RE.test(x.name) && (x.champ || !m.champ));
-  if (into && (!into.length || REGIONAL.test(m.name))) return '';
-  if (!into){
+  if (MEGA_RE.test(m.name)){
     // Looking at the Mega itself: point back to the normal form.
-    const from = MON.find(x => x.no === m.no && !MEGA_RE.test(x.name) && !REGIONAL.test(x.name));
-    return from ? `<p class="mega-from">${m.name.startsWith('Primal') ? 'Before Primal Reversion' : 'Before Mega Evolving'}, it's <button class="rchip" data-mon="${from.slug}">${monImg(from, 26)}${esc(from.name)}</button></p>` : '';
+    const from = MON.find(x => x.no === m.no && canMega(x));
+    return from ? `<p class="mega-from">${m.name.startsWith('Primal') ? 'Before Primal Reversion' : 'Before Mega Evolving'}, it's ${monBtn(from, 26)}</p>` : '';
   }
-  const weak = (types, x) => new Map(profileOf(types, x).filter(p => p.x > 1).map(p => [p.t, p.x]));
-  const was = weak(m.types, m);
+  if (!canMega(m)) return '';
+  const into = MON.filter(x => x.no === m.no && MEGA_RE.test(x.name) && (x.champ || !m.champ));
+  if (!into.length) return '';
+  const by = (types, x) => new Map(profileOf(types, x).map(p => [p.t, p.x]));
+  const was = by(m.types, m);
   const primal = into.every(x => x.name.startsWith('Primal'));
+  const chips = ts => ts.map(t => chip(t)).join(' ');
   const rows = into.map(x => {
-    const now = weak(x.types, x);
-    const gained = T.filter(t => now.has(t) && !was.has(t)), lost = T.filter(t => was.has(t) && !now.has(t));
-    const shift = T.filter(t => was.has(t) && now.has(t) && was.get(t) !== now.get(t));   // e.g. 4× down to 2×
-    const types = sameTypes(x.types, m.types) ? 'Same types' : `Becomes ${x.types.map(t => chip(t)).join(' ')}`;
-    const ab = x.abil[0] ? `<span class="mega-ab">Ability: <button class="abtn" data-ab="${esc(x.abil[0])}">${esc(x.abil[0])}</button></span>` : '';
-    const diff = [gained.length ? `<span>Now weak to ${gained.map(t => chip(t)).join(' ')}</span>` : '',
-                  lost.length ? `<span>No longer weak to ${lost.map(t => chip(t)).join(' ')}</span>` : '',
-                  ...shift.map(t => `<span>${chip(t)} ${fmt(was.get(t))} → ${fmt(now.get(t))}</span>`)].filter(Boolean).join('');
-    return `<li><button class="rchip" data-mon="${x.slug}"${x.champ ? '' : ` title="${notIn(x)}"`}>${monImg(x, 30)}${esc(x.name)}</button>
-      <div class="mega-fx"><span>${types}</span>${ab}${diff || '<span>Same weaknesses</span>'}</div></li>`;
+    const now = by(x.types, x), a = t => was.get(t), b = t => now.get(t);
+    const line = (txt, ts) => ts.length ? `<span>${txt} ${chips(ts)}</span>` : '';
+    const changed = T.filter(t => a(t) !== b(t));
+    const gained = changed.filter(t => b(t) > 1 && a(t) <= 1), lost = changed.filter(t => a(t) > 1 && b(t) <= 1);
+    const immNow = changed.filter(t => b(t) === 0), immLost = changed.filter(t => a(t) === 0);
+    const shift = changed.filter(t => a(t) > 1 && b(t) > 1);   // e.g. 4× down to 2×
+    const diff = [line('Now weak to', gained), line('No longer weak to', lost), line('Now immune to', immNow),
+      line('No longer immune to', immLost), ...shift.map(t => `<span>${chip(t)} ${fmt(a(t))} → ${fmt(b(t))}</span>`)].filter(Boolean).join('');
+    const types = sameTypes(x.types, m.types) ? 'Same types' : `Becomes ${chips(x.types)}`;
+    const ab = `<span class="mega-ab">Ability: ${x.abil[0] ? `<button class="abtn" data-ab="${esc(x.abil[0])}">${esc(x.abil[0])}</button>` : 'not listed yet'}</span>`;
+    return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}${diff || `<span>${changed.length ? 'Same weaknesses and immunities' : 'Same matchups'}</span>`}</div></li>`;
   }).join('');
   const verb = primal ? 'Primal Revert' : 'Mega Evolve';
   const when = primal ? (mode === 'fight' ? 'as soon as it comes out, which changes what hits it' : 'by itself when it comes out holding its orb')
@@ -293,18 +300,22 @@ function megaSec(m){
 }
 // Status conditions and effects a Pokémon's types make it immune to (Gen IX rules).
 const TYPE_IMMUNE = {
-  Fire: "Can't be burned (Will-O-Wisp fails).",
-  Electric: "Can't be paralyzed (Thunder Wave fails).",
-  Ice: "Can't be frozen.",
-  Poison: "Can't be poisoned (Toxic fails).",
-  Steel: "Can't be poisoned (Toxic fails).",
-  Grass: "Powder and spore moves (Spore, Sleep Powder, Stun Spore, Rage Powder) and Leech Seed don't affect it.",
-  Ghost: "Can't be trapped (Mean Look, Block, Shadow Tag, Arena Trap): it can always switch out.",
-  Dark: "Status moves sped up by Prankster fail against it.",
+  Fire: ["Can't be burned (Will-O-Wisp fails)."],
+  Electric: ["Can't be paralyzed (Thunder Wave fails)."],
+  Ice: ["Can't be frozen."],
+  Poison: ["Can't be poisoned (Toxic and Toxic Spikes fail)."],
+  Steel: ["Can't be poisoned (Toxic and Toxic Spikes fail).", 'Takes no sandstorm damage.'],
+  Rock: ['Takes no sandstorm damage.'],
+  Ground: ['Takes no sandstorm damage.', "Thunder Wave doesn't affect it."],
+  Grass: ['Powder and spore moves (Spore, Sleep Powder, Stun Spore, Rage Powder) and Leech Seed don\'t affect it.'],
+  Ghost: ["Can't be trapped (Mean Look, Block, Shadow Tag, Arena Trap): it can always switch out."],
+  Dark: ['Status moves sped up by Prankster fail against it.'],
+  Flying: ["Spikes, Toxic Spikes, Sticky Web and Arena Trap don't affect it."],
 };
 function immunities(types){
-  const seen = new Set();
-  return types.filter(t => TYPE_IMMUNE[t]).map(t => ({ t, say: TYPE_IMMUNE[t] })).filter(i => !seen.has(i.say) && seen.add(i.say));
+  const seen = new Set(), out = [];
+  types.forEach(t => (TYPE_IMMUNE[t] || []).forEach(say => { if (!seen.has(say)){ seen.add(say); out.push({ t, say }) } }));
+  return out;
 }
 
 /* ---------- Manual type picker ---------- */
