@@ -291,7 +291,8 @@ function megaSec(m){
     const now = by(x.types, x), a = t => was.get(t), b = t => now.get(t);
     const line = (txt, ts) => ts.length ? `<span>${txt} ${chips(ts)}</span>` : '';
     const changed = T.filter(t => a(t) !== b(t));
-    // Each type goes in one line only: immunity changes first, then weaknesses, then resistances.
+    // Immunity changes first, then weaknesses, then resistances. A type that swaps from weak to resisted
+    // (or back) shows in both its weakness and its resistance line, so neither change is missed.
     const immNow = changed.filter(t => b(t) === 0), immLost = changed.filter(t => a(t) === 0);
     const rest = changed.filter(t => a(t) !== 0 && b(t) !== 0);
     const gained = rest.filter(t => b(t) > 1 && a(t) <= 1), lost = rest.filter(t => a(t) > 1 && b(t) <= 1);
@@ -302,10 +303,12 @@ function megaSec(m){
       ...shift.map(t => `<span>${chip(t)} ${fmt(a(t))} → ${fmt(b(t))}</span>`), line('Now resists', resNow), line('No longer resists', resLost),
       ...immW.filter(i => !has(immN, i)).map(i => `<span class="mega-imm">Loses its ${chip(i.t)} protection: ${esc(i.say)}</span>`),
       ...immN.filter(i => !has(immW, i)).map(i => `<span class="mega-imm">Gains ${chip(i.t)} protection: ${esc(i.say)}</span>`),
-      ...[...maybeAb].filter(([ab]) => !x.abil.includes(ab)).map(([ab, ts]) => `<span class="mega-imm">Can't have ${esc(ab)} any more, which could change how ${chips(ts)} ${ts.length > 1 ? 'hit' : 'hits'} it</span>`)].filter(Boolean).join('');
+      ...[...maybeAb].filter(([ab]) => x.abil.length && !x.abil.includes(ab)).map(([ab, ts]) => `<span class="mega-imm">Can't have ${esc(ab)} any more, which could change how ${chips(ts)} ${ts.length > 1 ? 'hit' : 'hits'} it</span>`)].filter(Boolean).join('');
     const types = sameTypes(x.types, m.types) ? 'Same types' : `Becomes ${chips(x.types)}`;
     const ab = `<span class="mega-ab">Ability: ${x.abil[0] ? `<button class="abtn" data-ab="${esc(x.abil[0])}">${esc(x.abil[0])}</button>` : 'not listed yet'}</span>`;
-    return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}${diff || '<span>Same matchups</span>'}</div></li>`;
+    // With its ability unknown, abilities could still change things, so don't promise "same".
+    const same = x.abil.length ? 'Same matchups' : 'Same type matchups (its ability may change things)';
+    return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}${diff || `<span>${same}</span>`}</div></li>`;
   }).join('');
   const verb = primal ? 'Primal Revert' : 'Mega Evolve';
   const when = primal ? (mode === 'fight' ? 'as soon as it comes out, which changes what hits it' : 'by itself when it comes out holding its orb')
@@ -317,7 +320,7 @@ const TYPE_IMMUNE = {
   Fire: ["Can't be burned (Will-O-Wisp fails)."],
   Electric: ["Can't be paralyzed (Thunder Wave fails)."],
   Ice: ["Can't be frozen."],
-  Poison: ["Can't be poisoned, unless the attacker has Corrosion. Grounded, it clears Toxic Spikes when it comes in."],
+  Poison: ["Can't be poisoned, unless the attacker has Corrosion.", 'Clears Toxic Spikes from its side when it comes in (unless it floats).'],
   Steel: ["Can't be poisoned, unless the attacker has Corrosion.", 'Takes no sandstorm damage.'],
   Rock: ['Takes no sandstorm damage.'],
   Ground: ['Takes no sandstorm damage.'],
