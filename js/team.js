@@ -11,7 +11,8 @@ const dropped = loaded.filter(m => !team.includes(m) && team.some(x => x.no === 
 let tableOpen = true;                            // remembers if the big table was closed
 let tmode = store.get('tcs-team-mode', 'use') === 'fight' ? 'fight' : 'use';
 
-const saveTeam = () => store.set('tcs-team', team.map(m => m.slug));
+// Saving means the team changed, so the note about a trimmed saved team (if any) goes too.
+const saveTeam = () => { store.set('tcs-team', team.map(m => m.slug)); $('teamNote').hidden = true };
 const onTeam = m => team.some(x => x.slug === m.slug);
 const twin = m => team.find(x => x.no === m.no && x.slug !== m.slug);   // another form of it already on the team
 const taken = m => onTeam(m) || !!twin(m);
@@ -22,7 +23,7 @@ const count = n => `${n} Pokémon`;
 if (dropped.length){
   store.set('tcs-team', team.map(m => m.slug));
   setTimeout(() => {
-    const msg = `Took ${dropped.map(m => m.name).join(' and ')} off the team: a team can only have one of each Pokémon.`;
+    const msg = `Took ${joinList(dropped.map(m => m.name))} off the team: a team can only have one of each Pokémon.`;
     say(msg); const n = $('teamNote'); if (n){ n.textContent = msg; n.hidden = false }
   }, 0);
 }
@@ -43,7 +44,8 @@ function removeFromTeam(i){
 /* Button on the lookup's battle plan (called from renderPlan in app.js). */
 function teamButton(m){
   const on = onTeam(m), t = !on && twin(m), full = !on && !t && team.length >= TEAM_MAX;
-  if (t) return `<button class="btn team-add" data-addteam="${m.slug}" disabled title="${esc(twinMsg(m, t))}">${esc(t.name)} is on the team</button>`;
+  // Not disabled, so it can still be focused and tapped: tapping explains why it can't be added.
+  if (t) return `<button class="btn team-add" data-addteam="${m.slug}" aria-disabled="true">${esc(t.name)} is on the team</button>`;
   return `<button class="btn team-add${on ? ' on' : ''}" data-addteam="${m.slug}"${full ? ' disabled title="The team is full"' : on ? ` title="Tap to take it off the team" aria-label="On the team. Remove ${esc(m.name)} from the team"` : ''}>${on ? 'On the team' : full ? 'Team is full' : 'Add to team'}</button>`;
 }
 
@@ -253,7 +255,6 @@ $('teamOut').addEventListener('keydown', e => {
 document.addEventListener('click', e => { if (tFocus && !e.target.closest('.ttable')) clearTFocus() });
 
 function renderTeam(){
-  $('teamNote').hidden = true;   // the note about a trimmed saved team goes once the team changes
   const n = team.length;
   tFocus = null;
   $('teamSlots').innerHTML = team.map((m, i) => `<li class="tslot">${monImg(m, 44, 'tslot-mi')}<span class="ts">${m.types.map(t => icon(t, 22)).join('')}</span><span class="tslot-nm"><button class="tslot-name" data-mon="${m.slug}" title="Look up ${esc(m.name)}">${esc(m.name)}</button>${m.champ ? '' : `<span class="nic">${notIn(m, true)}</span>`}</span><button class="tslot-x" data-trm="${i}" aria-label="Remove ${esc(m.name)}">${X_SVG}</button></li>`).join('');
@@ -291,7 +292,8 @@ function teamWhy(anchor, atk){
 document.addEventListener('click', e => {
   const t = e.target;
   const add = t.closest('[data-addteam]'); if (add){
-    const m = BY_SLUG.get(add.dataset.addteam);
+    const m = BY_SLUG.get(add.dataset.addteam), tw = !onTeam(m) && twin(m);
+    if (tw){ openPop(add, 'One of each Pokémon', `<p>${esc(twinMsg(m, tw))} To swap them, remove ${esc(tw.name)} from the team first.</p>`); return }
     if (onTeam(m)) removeFromTeam(team.findIndex(x => x.slug === m.slug)); else addToTeam(m);
     return;
   }
