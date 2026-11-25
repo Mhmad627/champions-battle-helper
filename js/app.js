@@ -626,4 +626,19 @@ render();
 updateNav();
 
 /* ---------- Offline / install ---------- */
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+// Offline support. A new version downloads in the background; when it's ready, a small banner offers
+// to reload (never automatically, so nobody loses their place mid-battle).
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  const hadWorker = !!navigator.serviceWorker.controller;   // no worker yet = first visit, not an update
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadWorker) showUpdate() });
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').then(reg => {
+    // Phones keep the site open for hours: look for an update whenever it comes back on screen.
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}) });
+  }).catch(() => {}));
+}
+function showUpdate(){
+  if ($('update')) return;
+  document.body.insertAdjacentHTML('beforeend', `<div class="update" id="update" role="status"><span>A new version is ready.</span><button class="btn" id="updateGo">Reload</button><button class="update-x" id="updateX" aria-label="Not now">${X_SVG}</button></div>`);
+  $('updateGo').addEventListener('click', () => location.reload());
+  $('updateX').addEventListener('click', () => $('update').remove());
+}
