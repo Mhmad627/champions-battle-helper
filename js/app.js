@@ -263,7 +263,9 @@ function renderPlan(){
 const REGIONAL = /^(Alolan|Galarian|Hisuian|Paldean) /;
 const MEGA_RE = /^(Mega|Primal) /;
 const NO_MEGA = new Set(["Ash's Greninja"]);   // other forms that can't Mega Evolve
-const MEGA_FROM = { 'Mega Zygarde': 'Complete Zygarde' };   // Megas that come from a form other than the usual one
+// Megas that come from a form other than the usual one. Original Color Magearna isn't in the data, so that
+// Mega simply shows no base form (rather than claiming plain Magearna can become it).
+const MEGA_FROM = { 'Mega Zygarde': 'Complete Zygarde', 'Mega Original Magearna': 'Original Color Magearna' };
 const canMega = x => !MEGA_RE.test(x.name) && !REGIONAL.test(x.name) && !NO_MEGA.has(x.name);
 // The forms a Mega (or Primal) can come from (both Meowstic, for example).
 const megaBases = x => MEGA_FROM[x.name] ? [BY_SLUG.get(fold(MEGA_FROM[x.name]).replace(/ /g, '-'))].filter(Boolean)
@@ -287,6 +289,9 @@ function megaSec(m){
   profileOf(m.types, m).forEach(p => p.warn.forEach(w => maybeAb.set(w.ab, [...(maybeAb.get(w.ab) || []), p.t])));
   const primal = into.every(x => x.name.startsWith('Primal'));
   const chips = ts => ts.map(t => chip(t)).join(' ');
+  // Types an ability changes on the Mega's own typing, plus the ones it could change on the normal form.
+  const abTypes = x => { const bare = by(x.types, { ...x, abil: [], hidden: null }), full = by(x.types, x);
+    return T.filter(t => bare.get(t) !== full.get(t) || (maybeAb.get(x.abil[0]) || []).includes(t)) };
   const rows = into.map(x => {
     const now = by(x.types, x);
     // Compare like with like: if the Mega's ability isn't known, leave abilities out of both sides; if the Mega
@@ -300,13 +305,14 @@ function megaSec(m){
     // (or back) shows in both its weakness and its resistance line, so neither change is missed.
     const immNow = changed.filter(t => b(t) === 0), immLost = changed.filter(t => a(t) === 0);
     const rest = changed.filter(t => a(t) !== 0 && b(t) !== 0);
-    const gained = rest.filter(t => b(t) > 1 && a(t) <= 1), lost = rest.filter(t => a(t) > 1 && b(t) <= 1);
+    // "Now weak to"/"Now resists" also cover types that used to do nothing (0× → 2× is both "no longer immune" and "now weak").
+    const gained = changed.filter(t => b(t) > 1 && a(t) <= 1), lost = rest.filter(t => a(t) > 1 && b(t) <= 1);
     const shift = rest.filter(t => (a(t) > 1 && b(t) > 1) || (a(t) < 1 && b(t) < 1));   // e.g. 4× down to 2×
-    const resNow = rest.filter(t => b(t) < 1 && a(t) >= 1), resLost = rest.filter(t => a(t) < 1 && b(t) >= 1);
+    const resNow = changed.filter(t => b(t) < 1 && b(t) > 0 && (a(t) >= 1 || a(t) === 0)), resLost = rest.filter(t => a(t) < 1 && b(t) >= 1);
     const immN = immunities(x.types), immW = immunities(m.types), has = (l, i) => l.some(j => j.say === i.say);
     const diff = [line('Now immune to', immNow), line('No longer immune to', immLost), line('Now weak to', gained), line('No longer weak to', lost),
       ...shift.map(t => `<span>${chip(t)} now does ${fmt(b(t))} instead of ${fmt(a(t))}</span>`), line('Now resists', resNow), line('No longer resists', resLost),
-      always ? `<span class="mega-imm">Always has ${esc(own)} now (the normal form only might): ${chips(maybeAb.get(own))}</span>` : '',
+      always ? `<span class="mega-imm">Always has ${esc(own)} now (the normal form only might): ${chips(abTypes(x))}</span>` : '',
       ...immW.filter(i => !has(immN, i)).map(i => `<span class="mega-imm">Loses its ${chip(i.t)} protection: ${esc(i.say)}</span>`),
       ...immN.filter(i => !has(immW, i)).map(i => `<span class="mega-imm">Gains ${chip(i.t)} protection: ${esc(i.say)}</span>`),
       ...[...maybeAb].filter(([ab]) => x.abil.length && ab !== own).map(([ab, ts]) => `<span class="mega-imm">Can't have ${esc(ab)} any more, which could change how ${chips(ts)} ${ts.length > 1 ? 'hit' : 'hits'} it</span>`)].filter(Boolean).join('');
@@ -317,7 +323,7 @@ function megaSec(m){
     return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}${diff || `<span>${same}</span>`}</div></li>`;
   }).join('');
   const verb = primal ? 'Primal Revert' : 'Mega Evolve';
-  const when = primal ? (mode === 'fight' ? 'as soon as it comes out, which changes what hits it' : 'by itself when it comes out holding its orb')
+  const when = primal ? (mode === 'fight' ? 'as soon as it comes out holding its orb, which changes what hits it' : 'by itself when it comes out holding its orb')
     : (mode === 'fight' ? 'mid-battle, which can change what hits it' : 'once per battle, for one Pokémon on your team');
   return `<div class="plan-sec mega"><h3>It can ${verb} <small>${when}</small></h3><ul class="mega-list">${rows}</ul></div>`;
 }
@@ -333,7 +339,7 @@ const TYPE_IMMUNE = {
   Grass: ['Powder and spore moves (Spore, Sleep Powder, Stun Spore, Rage Powder) and Leech Seed don\'t affect it.'],
   Ghost: ["Can't be trapped (Mean Look, Block, Shadow Tag, Arena Trap): it can always switch out."],
   Dark: ["An opponent's status moves sped up by Prankster fail against it (an ally's still work)."],
-  Flying: ["Spikes, Toxic Spikes, Sticky Web and Arena Trap don't affect it."],
+  Flying: ["Spikes, Toxic Spikes, Sticky Web and Arena Trap don't affect it, unless something grounds it (Smack Down, Gravity, Roost)."],
 };
 function immunities(types){
   const seen = new Set(), out = [];
