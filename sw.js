@@ -1,13 +1,13 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v38';
+const VERSION = 'cbh-v39';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
 const TYPES = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
 const FILES = [
   './', 'index.html', 'about.html', 'manifest.webmanifest',
-  'css/style.css', 'js/data.js', 'js/app.js', 'js/team.js', 'js/theme.js',
+  'css/style.css', 'js/data.js', 'js/app.js', 'js/team.js', 'js/theme.js', 'js/update.js',
   'data/pokemon.js', 'data/abilities.js', 'data/champions.js', 'data/sprites.js',
   'assets/fonts/bricolage-grotesque-latin.woff2',
   'assets/icons/icon-192.png', 'assets/icons/favicon-32.png',
@@ -35,9 +35,16 @@ const fill = () => Promise.all(FILES.map(u => fetch(new Request(u, { cache: 'rel
 self.addEventListener('install', e => {
   e.waitUntil(caches.has(VERSION).then(existed => fill()
     // e.g. storage full: don't keep a half-filled cache (unless it was there before this install)
-    .catch(err => (existed ? Promise.resolve() : caches.delete(VERSION)).then(() => { throw err })))
-    .then(() => self.skipWaiting()));
+    .catch(err => (existed ? Promise.resolve() : caches.delete(VERSION)).then(() => { throw err }))));
+  // A new version then waits: open pages keep using the old one (offline too) until the person taps
+  // Reload in the update banner (js/update.js), which sends 'skip-waiting'.
+  // Versions up to cbh-v38 had no waiting step and their pages can't send that message, so when replacing
+  // one of those, take over straight away as they did (their pages then show their own banner).
+  e.waitUntil(caches.keys().then(keys => {
+    if (keys.some(k => { const m = /^cbh-v(\d+)$/.exec(k); return m && +m[1] <= 38 })) return self.skipWaiting();
+  }));
 });
+self.addEventListener('message', e => { if (e.data === 'skip-waiting') self.skipWaiting() });
 
 self.addEventListener('activate', e => {
   // Delete every other version (older ones, or newer ones left by a rollback) and old icon caches.
