@@ -272,7 +272,7 @@ const megaBases = x => MEGA_FROM[x.name] ? [BY_SLUG.get(fold(MEGA_FROM[x.name]).
   : MON.filter(y => y.no === x.no && canMega(y) && !Object.values(MEGA_FROM).includes(y.name));
 // A Pokémon button like the ones in "Same typing": dimmed and labelled when it isn't in Champions.
 const monBtn = (x, size) => `<button class="rchip${x.champ ? '' : ' out'}" data-mon="${x.slug}"${x.champ ? '' : ` title="${notIn(x)}"`}>${monImg(x, size)}${esc(x.name)}${x.champ ? '' : `<span class="sr"> (${notIn(x).replace('Not in', 'not in')})</span>`}</button>`;
-// What changes when it Mega Evolves: types, ability, and how each move type now hits it.
+// What it becomes when it Mega Evolves: types and ability.
 function megaSec(m){
   if (MEGA_RE.test(m.name)){
     // Looking at the Mega itself: point back to the normal form.
@@ -282,45 +282,12 @@ function megaSec(m){
   if (!canMega(m)) return '';
   const into = MON.filter(x => x.no === m.no && MEGA_RE.test(x.name) && megaBases(x).includes(m));
   if (!into.length) return '';
-  const by = (types, x) => new Map(profileOf(types, x).map(p => [p.t, p.x]));
-  const was = by(m.types, m);
-  // Abilities the normal form might have that change a matchup (Lightning Rod, Flash Fire...).
-  const maybeAb = new Map();
-  profileOf(m.types, m).forEach(p => p.warn.forEach(w => maybeAb.set(w.ab, [...(maybeAb.get(w.ab) || []), p.t])));
   const primal = into.every(x => x.name.startsWith('Primal'));
-  const chips = ts => ts.map(t => chip(t)).join(' ');
-  // Types an ability changes on the Mega's own typing, plus the ones it could change on the normal form.
-  const abTypes = x => { const bare = by(x.types, { ...x, abil: [], hidden: null }), full = by(x.types, x);
-    return T.filter(t => bare.get(t) !== full.get(t) || (maybeAb.get(x.abil[0]) || []).includes(t)) };
+  // Kept short on purpose: new types and ability. Tapping the Mega opens its own card with the full matchups.
   const rows = into.map(x => {
-    const now = by(x.types, x);
-    // Compare like with like: if the Mega's ability isn't known, leave abilities out of both sides; if the Mega
-    // always has an ability the normal form only might have, count it on both sides and say so instead.
-    const own = x.abil[0], always = own && maybeAb.has(own);
-    const before = !x.abil.length ? by(m.types, null) : always ? by(m.types, { ...m, abil: [own], hidden: null }) : was;
-    const a = t => before.get(t), b = t => now.get(t);
-    const line = (txt, ts) => ts.length ? `<span>${txt} ${chips(ts)}</span>` : '';
-    const changed = T.filter(t => a(t) !== b(t));
-    // Immunity changes first, then weaknesses, then resistances. A type that swaps from weak to resisted
-    // (or back) shows in both its weakness and its resistance line, so neither change is missed.
-    const immNow = changed.filter(t => b(t) === 0), immLost = changed.filter(t => a(t) === 0);
-    const rest = changed.filter(t => a(t) !== 0 && b(t) !== 0);
-    // "Now weak to"/"Now resists" also cover types that used to do nothing (0× → 2× is both "no longer immune" and "now weak").
-    const gained = changed.filter(t => b(t) > 1 && a(t) <= 1), lost = rest.filter(t => a(t) > 1 && b(t) <= 1);
-    const shift = rest.filter(t => (a(t) > 1 && b(t) > 1) || (a(t) < 1 && b(t) < 1));   // e.g. 4× down to 2×
-    const resNow = changed.filter(t => b(t) < 1 && b(t) > 0 && (a(t) >= 1 || a(t) === 0)), resLost = rest.filter(t => a(t) < 1 && b(t) >= 1);
-    const immN = immunities(x.types), immW = immunities(m.types), has = (l, i) => l.some(j => j.say === i.say);
-    const diff = [line('Now immune to', immNow), line('No longer immune to', immLost), line('Now weak to', gained), line('No longer weak to', lost),
-      ...shift.map(t => `<span>${chip(t)} now does ${fmt(b(t))} instead of ${fmt(a(t))}</span>`), line('Now resists', resNow), line('No longer resists', resLost),
-      always ? `<span class="mega-imm">Always has ${esc(own)} now (the normal form only might): ${chips(abTypes(x))}</span>` : '',
-      ...immW.filter(i => !has(immN, i)).map(i => `<span class="mega-imm">Loses its ${chip(i.t)} protection: ${esc(i.say)}</span>`),
-      ...immN.filter(i => !has(immW, i)).map(i => `<span class="mega-imm">Gains ${chip(i.t)} protection: ${esc(i.say)}</span>`),
-      ...[...maybeAb].filter(([ab]) => x.abil.length && ab !== own).map(([ab, ts]) => `<span class="mega-imm">Can't have ${esc(ab)} any more, which could change how ${chips(ts)} ${ts.length > 1 ? 'hit' : 'hits'} it</span>`)].filter(Boolean).join('');
-    const types = sameTypes(x.types, m.types) ? 'Same types' : `Becomes ${chips(x.types)}`;
+    const types = sameTypes(x.types, m.types) ? 'Same types' : `Becomes ${x.types.map(t => chip(t)).join(' ')}`;
     const ab = `<span class="mega-ab">Ability: ${x.abil[0] ? `<button class="abtn" data-ab="${esc(x.abil[0])}">${esc(x.abil[0])}</button>` : 'not listed yet'}</span>`;
-    // With its ability unknown, abilities could still change things, so don't promise "same".
-    const same = x.abil.length ? 'Same matchups' : 'Same type matchups (its ability may change things)';
-    return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}${diff || `<span>${same}</span>`}</div></li>`;
+    return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}</div></li>`;
   }).join('');
   const verb = primal ? 'Primal Revert' : 'Mega Evolve';
   const when = primal ? (mode === 'fight' ? 'as soon as it comes out holding its orb, which changes what hits it' : 'by itself when it comes out holding its orb')
