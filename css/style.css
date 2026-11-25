@@ -362,6 +362,13 @@ button.pair-warn{position:relative;border:0;padding:0;cursor:pointer}
 .ab p{margin:0;font-size:15px;line-height:1.5}
 .ab p.sum{margin-top:5px;font-size:14px;color:var(--muted)}
 .ab .fx{margin-top:8px;font-size:14px;font-weight:600;color:var(--good)}
+.mega-list,.imm{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mega-list li{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:var(--panel-2)}
+.mega-fx{display:flex;flex-direction:column;gap:6px;font-size:14.5px;color:var(--muted);min-width:0;flex:1 1 220px}
+.mega-fx > span{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mega-from{margin:16px 0 0;font-size:14.5px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.imm li{display:flex;align-items:flex-start;gap:10px;font-size:14.5px;line-height:1.45}
+.imm li .chip{flex:none}
 .ab-mons{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
 .ab-mons summary{cursor:pointer;font-size:14px;font-weight:650;color:var(--muted);padding:4px 0;list-style-position:inside}
 .ab-mons summary:hover{color:var(--text)}
