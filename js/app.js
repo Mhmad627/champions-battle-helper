@@ -250,7 +250,7 @@ function renderPlan(){
   if (mon) h += megaSec(mon);
   // Status and effects its types make it immune to
   const imm = immunities(sel);
-  if (imm.length) h += `<div class="plan-sec"><h3>${mode === 'fight' ? "What doesn't work on it" : "It's safe from"} <small>because of its ${sel.length > 1 ? 'types' : 'type'}</small></h3><ul class="imm">${imm.map(i => `<li>${chip(i.t)}<span>${i.say}</span></li>`).join('')}</ul></div>`;
+  if (imm.length) h += `<div class="plan-sec"><h3>${mode === 'fight' ? 'Its types protect it from' : "It's safe from"} <small>because of its ${sel.length > 1 ? 'types' : 'type'}</small></h3><ul class="imm">${imm.map(i => `<li>${chip(i.t)}<span>${i.say}</span></li>`).join('')}</ul></div>`;
 
   h += `<details class="more"><summary>Normal damage (1×) from ${neutral.length} types</summary>${tiles(neutral, 'small')}</details>`;
 
@@ -263,18 +263,21 @@ function renderPlan(){
 const REGIONAL = /^(Alolan|Galarian|Hisuian|Paldean) /;
 const MEGA_RE = /^(Mega|Primal) /;
 const NO_MEGA = new Set(["Ash's Greninja"]);   // other forms that can't Mega Evolve
+const MEGA_FROM = { 'Mega Zygarde': 'Complete Zygarde' };   // Megas that come from a form other than the usual one
 const canMega = x => !MEGA_RE.test(x.name) && !REGIONAL.test(x.name) && !NO_MEGA.has(x.name);
+// The form a Mega (or Primal) comes from.
+const megaBase = x => MEGA_FROM[x.name] ? BY_SLUG.get(fold(MEGA_FROM[x.name]).replace(/ /g, '-')) : MON.find(y => y.no === x.no && canMega(y) && !Object.values(MEGA_FROM).includes(y.name));
 // A Pokémon button like the ones in "Same typing": dimmed and labelled when it isn't in Champions.
 const monBtn = (x, size) => `<button class="rchip${x.champ ? '' : ' out'}" data-mon="${x.slug}"${x.champ ? '' : ` title="${notIn(x)}"`}>${monImg(x, size)}${esc(x.name)}${x.champ ? '' : `<span class="sr"> (${notIn(x).replace('Not in', 'not in')})</span>`}</button>`;
 // What changes when it Mega Evolves: types, ability, and how each move type now hits it.
 function megaSec(m){
   if (MEGA_RE.test(m.name)){
     // Looking at the Mega itself: point back to the normal form.
-    const from = MON.find(x => x.no === m.no && canMega(x));
+    const from = megaBase(m);
     return from ? `<p class="mega-from">${m.name.startsWith('Primal') ? 'Before Primal Reversion' : 'Before Mega Evolving'}, it's ${monBtn(from, 26)}</p>` : '';
   }
   if (!canMega(m)) return '';
-  const into = MON.filter(x => x.no === m.no && MEGA_RE.test(x.name) && (x.champ || !m.champ));
+  const into = MON.filter(x => x.no === m.no && MEGA_RE.test(x.name) && megaBase(x) === m);
   if (!into.length) return '';
   const by = (types, x) => new Map(profileOf(types, x).map(p => [p.t, p.x]));
   const was = by(m.types, m);
@@ -284,14 +287,20 @@ function megaSec(m){
     const now = by(x.types, x), a = t => was.get(t), b = t => now.get(t);
     const line = (txt, ts) => ts.length ? `<span>${txt} ${chips(ts)}</span>` : '';
     const changed = T.filter(t => a(t) !== b(t));
-    const gained = changed.filter(t => b(t) > 1 && a(t) <= 1), lost = changed.filter(t => a(t) > 1 && b(t) <= 1);
+    // Each type goes in one line only: immunity changes first, then weaknesses, then resistances.
     const immNow = changed.filter(t => b(t) === 0), immLost = changed.filter(t => a(t) === 0);
-    const shift = changed.filter(t => a(t) > 1 && b(t) > 1);   // e.g. 4× down to 2×
-    const diff = [line('Now weak to', gained), line('No longer weak to', lost), line('Now immune to', immNow),
-      line('No longer immune to', immLost), ...shift.map(t => `<span>${chip(t)} ${fmt(a(t))} → ${fmt(b(t))}</span>`)].filter(Boolean).join('');
+    const rest = changed.filter(t => a(t) !== 0 && b(t) !== 0);
+    const gained = rest.filter(t => b(t) > 1 && a(t) <= 1), lost = rest.filter(t => a(t) > 1 && b(t) <= 1);
+    const shift = rest.filter(t => (a(t) > 1 && b(t) > 1) || (a(t) < 1 && b(t) < 1));   // e.g. 4× down to 2×
+    const resNow = rest.filter(t => b(t) < 1 && a(t) >= 1 && !lost.includes(t)), resLost = rest.filter(t => a(t) < 1 && b(t) >= 1 && !gained.includes(t));
+    const immN = immunities(x.types), immW = immunities(m.types), has = (l, i) => l.some(j => j.say === i.say);
+    const diff = [line('Now immune to', immNow), line('No longer immune to', immLost), line('Now weak to', gained), line('No longer weak to', lost),
+      ...shift.map(t => `<span>${chip(t)} ${fmt(a(t))} → ${fmt(b(t))}</span>`), line('Now resists', resNow), line('No longer resists', resLost),
+      ...immW.filter(i => !has(immN, i)).map(i => `<span class="mega-imm">Loses its ${chip(i.t)} protection: ${esc(i.say)}</span>`),
+      ...immN.filter(i => !has(immW, i)).map(i => `<span class="mega-imm">Gains ${chip(i.t)} protection: ${esc(i.say)}</span>`)].filter(Boolean).join('');
     const types = sameTypes(x.types, m.types) ? 'Same types' : `Becomes ${chips(x.types)}`;
     const ab = `<span class="mega-ab">Ability: ${x.abil[0] ? `<button class="abtn" data-ab="${esc(x.abil[0])}">${esc(x.abil[0])}</button>` : 'not listed yet'}</span>`;
-    return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}${diff || `<span>${changed.length ? 'Same weaknesses and immunities' : 'Same matchups'}</span>`}</div></li>`;
+    return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}${diff || '<span>Same matchups</span>'}</div></li>`;
   }).join('');
   const verb = primal ? 'Primal Revert' : 'Mega Evolve';
   const when = primal ? (mode === 'fight' ? 'as soon as it comes out, which changes what hits it' : 'by itself when it comes out holding its orb')
@@ -306,7 +315,7 @@ const TYPE_IMMUNE = {
   Poison: ["Can't be poisoned (Toxic and Toxic Spikes fail)."],
   Steel: ["Can't be poisoned (Toxic and Toxic Spikes fail).", 'Takes no sandstorm damage.'],
   Rock: ['Takes no sandstorm damage.'],
-  Ground: ['Takes no sandstorm damage.', "Thunder Wave doesn't affect it."],
+  Ground: ['Takes no sandstorm damage.'],
   Grass: ['Powder and spore moves (Spore, Sleep Powder, Stun Spore, Rage Powder) and Leech Seed don\'t affect it.'],
   Ghost: ["Can't be trapped (Mean Look, Block, Shadow Tag, Arena Trap): it can always switch out."],
   Dark: ['Status moves sped up by Prankster fail against it.'],

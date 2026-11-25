@@ -367,6 +367,7 @@ button.pair-warn{position:relative;border:0;padding:0;cursor:pointer}
 .mega-list li{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:var(--panel-2)}
 .mega-fx{display:flex;flex-direction:column;gap:6px;font-size:14.5px;color:var(--muted);min-width:0;flex:1 1 220px}
 .mega-fx > span{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mega-fx > span.mega-imm{display:block;line-height:1.9}
 .mega-from{margin:16px 0 0;font-size:14.5px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .imm li{display:flex;align-items:flex-start;gap:10px;font-size:14.5px;line-height:1.45}
 .imm li .chip{flex:none}
