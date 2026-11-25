@@ -48,6 +48,7 @@ const GLOSSARY = {
 // Abilities that change what a defending Pokémon takes. mods multiply the type multiplier.
 const ABILITY_DEF = {
   'Levitate':{mods:{Ground:0},say:'Ground moves won\'t hit it.'},
+  'Eelevate':{mods:{Ground:0},say:'It floats: Ground moves won\'t hit it.'},
   'Earth Eater':{mods:{Ground:0},say:'Ground moves heal it instead.'},
   'Flash Fire':{mods:{Fire:0},say:'Fire moves power it up instead.'},
   'Well-Baked Body':{mods:{Fire:0},say:'Fire moves raise its Defense instead.'},

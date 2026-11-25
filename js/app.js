@@ -288,7 +288,12 @@ function megaSec(m){
   const primal = into.every(x => x.name.startsWith('Primal'));
   const chips = ts => ts.map(t => chip(t)).join(' ');
   const rows = into.map(x => {
-    const now = by(x.types, x), a = t => was.get(t), b = t => now.get(t);
+    const now = by(x.types, x);
+    // Compare like with like: if the Mega's ability isn't known, leave abilities out of both sides; if the Mega
+    // always has an ability the normal form only might have, count it on both sides and say so instead.
+    const own = x.abil[0], always = own && maybeAb.has(own);
+    const before = !x.abil.length ? by(m.types, null) : always ? by(m.types, { ...m, abil: [own], hidden: null }) : was;
+    const a = t => before.get(t), b = t => now.get(t);
     const line = (txt, ts) => ts.length ? `<span>${txt} ${chips(ts)}</span>` : '';
     const changed = T.filter(t => a(t) !== b(t));
     // Immunity changes first, then weaknesses, then resistances. A type that swaps from weak to resisted
@@ -300,10 +305,11 @@ function megaSec(m){
     const resNow = rest.filter(t => b(t) < 1 && a(t) >= 1), resLost = rest.filter(t => a(t) < 1 && b(t) >= 1);
     const immN = immunities(x.types), immW = immunities(m.types), has = (l, i) => l.some(j => j.say === i.say);
     const diff = [line('Now immune to', immNow), line('No longer immune to', immLost), line('Now weak to', gained), line('No longer weak to', lost),
-      ...shift.map(t => `<span>${chip(t)} ${fmt(a(t))} → ${fmt(b(t))}</span>`), line('Now resists', resNow), line('No longer resists', resLost),
+      ...shift.map(t => `<span>${chip(t)} now does ${fmt(b(t))} instead of ${fmt(a(t))}</span>`), line('Now resists', resNow), line('No longer resists', resLost),
+      always ? `<span class="mega-imm">Always has ${esc(own)} now (the normal form only might): ${chips(maybeAb.get(own))}</span>` : '',
       ...immW.filter(i => !has(immN, i)).map(i => `<span class="mega-imm">Loses its ${chip(i.t)} protection: ${esc(i.say)}</span>`),
       ...immN.filter(i => !has(immW, i)).map(i => `<span class="mega-imm">Gains ${chip(i.t)} protection: ${esc(i.say)}</span>`),
-      ...[...maybeAb].filter(([ab]) => x.abil.length && !x.abil.includes(ab)).map(([ab, ts]) => `<span class="mega-imm">Can't have ${esc(ab)} any more, which could change how ${chips(ts)} ${ts.length > 1 ? 'hit' : 'hits'} it</span>`)].filter(Boolean).join('');
+      ...[...maybeAb].filter(([ab]) => x.abil.length && ab !== own).map(([ab, ts]) => `<span class="mega-imm">Can't have ${esc(ab)} any more, which could change how ${chips(ts)} ${ts.length > 1 ? 'hit' : 'hits'} it</span>`)].filter(Boolean).join('');
     const types = sameTypes(x.types, m.types) ? 'Same types' : `Becomes ${chips(x.types)}`;
     const ab = `<span class="mega-ab">Ability: ${x.abil[0] ? `<button class="abtn" data-ab="${esc(x.abil[0])}">${esc(x.abil[0])}</button>` : 'not listed yet'}</span>`;
     // With its ability unknown, abilities could still change things, so don't promise "same".
@@ -320,7 +326,7 @@ const TYPE_IMMUNE = {
   Fire: ["Can't be burned (Will-O-Wisp fails)."],
   Electric: ["Can't be paralyzed (Thunder Wave fails)."],
   Ice: ["Can't be frozen."],
-  Poison: ["Can't be poisoned, unless the attacker has Corrosion.", 'Clears Toxic Spikes from its side when it comes in (unless it floats).'],
+  Poison: ["Can't be poisoned, unless the attacker has Corrosion."],
   Steel: ["Can't be poisoned, unless the attacker has Corrosion.", 'Takes no sandstorm damage.'],
   Rock: ['Takes no sandstorm damage.'],
   Ground: ['Takes no sandstorm damage.'],
