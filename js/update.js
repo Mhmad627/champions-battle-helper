@@ -8,7 +8,7 @@
   const sw = navigator.serviceWorker;
   const CHECK_EVERY = 30 * 60 * 1000;   // look for updates at most every 30 minutes when the tab comes back
   const X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-  const hadWorker = !!sw.controller;
+  let hadWorker = !!sw.controller;   // set again below: after a hard refresh there's a worker but no controller
   let reg = null, lastCheck = Date.now(), lastFocus = null, reloading = false;
 
   // The banner's own live region, added now (empty) so screen readers are already watching it when it's filled.
@@ -30,13 +30,19 @@
       // Switch to the new version, then reload once it has taken over (or after 3 seconds regardless).
       sw.addEventListener('controllerchange', reload, { once: true });
       waiting.postMessage('skip-waiting');
-      setTimeout(reload, 3000);
+      // If an even newer version replaced that one meanwhile, ask the newest one, then reload regardless.
+      setTimeout(() => {
+        if (reloading) return;
+        if (reg.waiting && reg.waiting !== waiting){ reg.waiting.postMessage('skip-waiting'); setTimeout(reload, 3000) }
+        else reload();
+      }, 3000);
     });
     document.getElementById('updateX').addEventListener('click', () => {
       const bar = document.getElementById('update'), hadFocus = bar.contains(document.activeElement);
       bar.remove(); document.body.classList.remove('has-update');
       if (!hadFocus) return;
-      const to = lastFocus && document.contains(lastFocus) ? lastFocus : document.getElementById('q') || document.querySelector('main');
+      const seen = el => el && document.contains(el) && el.getClientRects().length > 0;   // still there and visible
+      const to = [lastFocus, document.getElementById('q')].find(seen) || document.querySelector('main');
       if (to){ if (to.tagName === 'MAIN') to.tabIndex = -1; to.focus({ preventScroll: true }) }
     });
   }
@@ -48,7 +54,7 @@
   sw.addEventListener('controllerchange', () => { if (hadWorker && !reloading) show() });
 
   addEventListener('load', () => sw.register('sw.js').then(r => {
-    reg = r; check();
+    reg = r; if (r.active) hadWorker = true; check();
     watch(r.installing);                                   // an update that started while the page loaded
     r.addEventListener('updatefound', () => watch(r.installing));
     // Phones keep the site open for hours: look for an update when it comes back on screen.

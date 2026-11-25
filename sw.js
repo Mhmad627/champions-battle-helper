@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v41';
+const VERSION = 'cbh-v42';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
@@ -39,11 +39,10 @@ self.addEventListener('install', e => {
   // A new version then waits: open pages keep using the old one (offline too) until the person taps
   // Reload in the update banner (js/update.js), which sends 'skip-waiting'.
   // Versions up to cbh-v38 had no waiting step and their pages can't send that message, so when replacing one
-  // of those, take over straight away as they did. Same when no older version has files stored (nothing to
-  // keep running). From cbh-v39 on, every version waits.
+  // of those, take over straight away as they did. From cbh-v39 on, every version waits (their pages have the
+  // banner, so they can always switch).
   e.waitUntil(caches.keys().then(keys => {
-    const older = keys.map(k => /^cbh-v(\d+)$/.exec(k)).filter(m => m && m[0] !== VERSION).map(m => +m[1]);
-    if (!older.length || older.some(n => n <= 38)) return self.skipWaiting();
+    if (keys.some(k => { const m = /^cbh-v(\d+)$/.exec(k); return m && +m[1] <= 38 })) return self.skipWaiting();
   }));
 });
 self.addEventListener('message', e => { if (e.data === 'skip-waiting') self.skipWaiting() });
