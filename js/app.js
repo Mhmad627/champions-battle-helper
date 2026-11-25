@@ -374,20 +374,60 @@ function rich(text, qq, plain){
   return h.replace(/(<[^>]+>)|([^<]+)/g, (m, tag, txt) => tag || txt.replace(TYPE_RE, (mm, w, suf) => `<span class="tword" style="color:color-mix(in srgb,${TYPE_COLOR[w]} 75%,var(--text))">${icon(w, 16)}${w}${suf || ''}</span>`));
 }
 let abFilter = 'all';
-function renderAbilities(){
+// Which Pokémon can have each ability: Champions Pokémon first, then the rest (dimmed, like "Same typing").
+const AB_MONS = new Map();
+MON.forEach(m => [...new Set([...m.abil, ...(m.hidden ? [m.hidden] : [])])].forEach(a => {
+  if (!AB_MONS.has(a)) AB_MONS.set(a, []);
+  AB_MONS.get(a).push({ m, hidden: a === m.hidden && !m.abil.includes(a) });
+}));
+AB_MONS.forEach(l => l.sort((a, b) => b.m.champ - a.m.champ || a.m.no - b.m.no || a.m.i - b.m.i));
+function abMons(name){
+  return (AB_MONS.get(name) || []).map(({ m, hidden }) => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${monImg(m, 26)}${esc(m.name)}${hidden ? '<small>hidden</small>' : ''}${m.champ ? '' : `<span class="sr"> (${notIn(m).replace('Not in', 'not in')})</span>`}</button>`).join('');
+}
+// Phones show the list a few at a time; computers have a scroll box.
+const AB_STEP = () => matchMedia('(max-width:700px)').matches ? 15 : 160;
+let abShown = 0;
+function abCard(a, qq, open){
+  const n = (AB_MONS.get(a.name) || []).length, ql = qq.toLowerCase();
+  return `<article class="ab${ql && a.name.toLowerCase() === ql ? ' hit' : ''}">
+      <div class="ab-top"><span class="ab-name">${rich(a.name, qq, 1)}</span>${a.tags.map(t => `<span class="tag ${t}">${TAGN[t]}</span>`).join('')}<span class="tag gen">Gen ${ROMAN[a.gen]}</span></div>
+      <p>${rich(a.desc, qq)}</p>${a.sum ? `<p class="sum">${rich(a.sum, qq)}</p>` : ''}${ABILITY_DEF[a.name] ? `<p class="fx">In battle: ${esc(ABILITY_DEF[a.name].say)}</p>` : ''}
+      ${n ? `<details class="ab-mons" data-abmons="${esc(a.name)}"${open ? ' open' : ''}><summary>Pokémon with this ability (${n})</summary><div class="same">${open ? abMons(a.name) : ''}</div></details>` : ''}
+    </article>`;
+}
+function renderAbilities(more){
   const qq = $('abQ').value.trim(), ql = qq.toLowerCase(), gen = +$('abGen').value;
   let list = AB.filter(a => (abFilter === 'all' || a.tags.includes(abFilter)) && (!gen || a.gen === gen) && (!ql || a.hay.includes(ql)));
   if (ql){ const rank = n => { n = n.toLowerCase(); return n === ql ? 0 : n.startsWith(ql) ? 1 : n.includes(ql) ? 2 : 3 }; list.sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name)) }
   $('abCount').textContent = `${list.length} of ${AB.length} abilities`;
-  $('abList').innerHTML = list.length ? list.slice(0, 160).map(a => `<article class="ab${ql && a.name.toLowerCase() === ql ? ' hit' : ''}">
-      <div class="ab-top"><span class="ab-name">${rich(a.name, qq, 1)}</span>${a.tags.map(t => `<span class="tag ${t}">${TAGN[t]}</span>`).join('')}<span class="tag gen">Gen ${ROMAN[a.gen]}</span></div>
-      <p>${rich(a.desc, qq)}</p>${a.sum ? `<p class="sum">${rich(a.sum, qq)}</p>` : ''}${ABILITY_DEF[a.name] ? `<p class="fx">In battle: ${esc(ABILITY_DEF[a.name].say)}</p>` : ''}
-    </article>`).join('') + (list.length > 160 ? '<div class="ab-empty">Showing the first 160. Type to narrow it down.</div>' : '')
-    : `<div class="ab-empty">No ability matches “${esc(qq)}”. Try a shorter word.</div>`;
-  $('abList').scrollTop = 0;
+  const el = $('abList');
+  if (!list.length){ el.innerHTML = `<div class="ab-empty">No ability matches “${esc(qq)}”. Try a shorter word.</div>`; return }
+  const from = more ? abShown : 0;
+  abShown = Math.min(list.length, from + AB_STEP());
+  // A search that names one ability exactly (or finds just one) opens its Pokémon list.
+  const cards = list.slice(from, abShown).map(a => abCard(a, qq, list.length === 1 || (ql && a.name.toLowerCase() === ql))).join('');
+  const left = list.length - abShown;
+  const tail = left > 0 ? `<div class="ab-more"><button class="btn" data-abmore>Show ${Math.min(left, AB_STEP())} more</button><span>${left} not shown. Type to narrow it down.</span></div>` : '';
+  if (more){
+    el.querySelector('.ab-more')?.remove();
+    el.insertAdjacentHTML('beforeend', cards + tail);
+  } else { el.innerHTML = cards + tail; el.scrollTop = 0 }
 }
-$('abQ').addEventListener('input', renderAbilities);
-$('abGen').addEventListener('change', renderAbilities);
+// Fill a Pokémon list the first time it's opened.
+$('abList').addEventListener('toggle', e => {
+  const d = e.target; if (!d.matches || !d.matches('details[data-abmons]') || !d.open) return;
+  const box = d.querySelector('.same'); if (!box.children.length) box.innerHTML = abMons(d.dataset.abmons);
+}, true);
+$('abList').addEventListener('click', e => {
+  if (!e.target.closest('[data-abmore]')) return;
+  const first = $('abList').querySelectorAll('.ab').length;
+  renderAbilities(true);
+  // Keep keyboard focus in place: move it to the first new card's Pokémon list (or the next button).
+  const next = $('abList').querySelectorAll('.ab')[first];
+  (next?.querySelector('summary') || $('abList').querySelector('[data-abmore]'))?.focus({ preventScroll: true });
+});
+$('abQ').addEventListener('input', () => renderAbilities());
+$('abGen').addEventListener('change', () => renderAbilities());
 $('abF').addEventListener('click', e => { const b = e.target.closest('.fchip'); if (!b) return; abFilter = b.dataset.f; $('abF').querySelectorAll('.fchip').forEach(x => x.setAttribute('aria-pressed', x === b)); renderAbilities() });
 function showAbilityInList(name){
   closePop();

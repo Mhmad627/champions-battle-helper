@@ -4,17 +4,23 @@
 const TEAM_MAX = 6;
 const SAMPLE_TEAM = ['garchomp', 'incineroar', 'kingambit', 'primarina', 'dragonite', 'sinistcha'];
 const savedTeam = store.get('tcs-team', []);   // ignore anything that isn't a list of names
-let team = [...new Set(Array.isArray(savedTeam) ? savedTeam : [])].map(s => BY_SLUG.get(s)).filter(Boolean).slice(0, TEAM_MAX);
+// One of each species: a Pokémon and its Mega or Primal form share a Pokédex number and can't both be on it.
+let team = [...new Set(Array.isArray(savedTeam) ? savedTeam : [])].map(s => BY_SLUG.get(s)).filter(Boolean)
+  .filter((m, i, a) => a.findIndex(x => x.no === m.no) === i).slice(0, TEAM_MAX);
 let tableOpen = true;                            // remembers if the big table was closed
 let tmode = store.get('tcs-team-mode', 'use') === 'fight' ? 'fight' : 'use';
 
 const saveTeam = () => store.set('tcs-team', team.map(m => m.slug));
 const onTeam = m => team.some(x => x.slug === m.slug);
+const twin = m => team.find(x => x.no === m.no && x.slug !== m.slug);   // another form of it already on the team
+const taken = m => onTeam(m) || !!twin(m);
+const twinMsg = (m, t) => `${t.name} is already on the team. A team can only have one of each Pokémon, so ${t.name} and ${m.name} can't both be on it.`;
 const say = text => { $('teamLive').textContent = ''; setTimeout(() => $('teamLive').textContent = text, 30) };
 const count = n => `${n} Pokémon`;
 
 function addToTeam(m){
   if (!m || onTeam(m)) return false;
+  const t = twin(m); if (t){ say(twinMsg(m, t)); return false }
   if (team.length >= TEAM_MAX){ say(`The team is full. Remove a Pokémon to add ${m.name}.`); return false }
   team.push(m); saveTeam(); renderTeam();
   say(`Added ${m.name}. ${count(team.length)} on the team.`);
@@ -27,7 +33,8 @@ function removeFromTeam(i){
 
 /* Button on the lookup's battle plan (called from renderPlan in app.js). */
 function teamButton(m){
-  const on = onTeam(m), full = !on && team.length >= TEAM_MAX;
+  const on = onTeam(m), t = !on && twin(m), full = !on && !t && team.length >= TEAM_MAX;
+  if (t) return `<button class="btn team-add" data-addteam="${m.slug}" disabled title="${esc(twinMsg(m, t))}">${esc(t.name)} is on the team</button>`;
   return `<button class="btn team-add${on ? ' on' : ''}" data-addteam="${m.slug}"${full ? ' disabled title="The team is full"' : on ? ` title="Tap to take it off the team" aria-label="On the team. Remove ${esc(m.name)} from the team"` : ''}>${on ? 'On the team' : full ? 'Team is full' : 'Add to team'}</button>`;
 }
 
@@ -37,8 +44,8 @@ let tItems = [], tActive = -1;
 function renderTSug(){
   const v = tq.value;
   if (!v.trim()){ closeTSug(); return }
-  tItems = search(v, true); tActive = tItems.findIndex(r => !onTeam(r.m)); if (tActive < 0) tActive = tItems.length ? 0 : -1;
-  tsug.innerHTML = tItems.length ? tItems.map((r, k) => `<li role="option" id="to${k}" data-k="${k}"${onTeam(r.m) ? ' aria-disabled="true"' : ''}><span class="mi-box">${monImg(r.m, 40)}</span><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${onTeam(r.m) ? '<span class="nic">On the team</span>' : r.m.champ ? '' : `<span class="nic">${notIn(r.m, true)}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
+  tItems = search(v, true); tActive = tItems.findIndex(r => !taken(r.m)); if (tActive < 0) tActive = tItems.length ? 0 : -1;
+  tsug.innerHTML = tItems.length ? tItems.map((r, k) => `<li role="option" id="to${k}" data-k="${k}"${taken(r.m) ? ' aria-disabled="true"' : ''}><span class="mi-box">${monImg(r.m, 40)}</span><span class="ts">${r.m.types.map(t => icon(t, 24)).join('')}</span><span class="nm">${esc(r.m.name)}</span><span class="sr">, ${r.m.types.join(' and ')}</span>${onTeam(r.m) ? '<span class="nic">On the team</span>' : twin(r.m) ? `<span class="nic">${esc(twin(r.m).name)} is on the team</span>` : r.m.champ ? '' : `<span class="nic">${notIn(r.m, true)}</span>`}<span class="no">#${r.m.no}</span></li>`).join('')
     : `<li class="empty">No Pokémon called “${esc(v.trim())}”. Check the spelling?</li>`;
   tsug.hidden = false; tq.setAttribute('aria-expanded', 'true');
   markTActive();
@@ -52,6 +59,7 @@ function closeTSug(){ tItems = []; tActive = -1; tsug.hidden = true; tq.setAttri
 function pickT(k){
   const r = tItems[k]; if (!r) return;
   if (onTeam(r.m)){ say(`${r.m.name} is already on the team.`); return }
+  const t = twin(r.m); if (t){ say(twinMsg(r.m, t)); return }
   closeTSug(); tq.value = '';
   addToTeam(r.m);
   // The box is disabled once the team is full, so move focus to the new Pokémon's remove button.
@@ -63,7 +71,7 @@ tq.addEventListener('focus', () => { if (tq.value.trim()) renderTSug() });
 tq.addEventListener('keydown', e => {
   if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && tItems.length){
     e.preventDefault(); const step = e.key === 'ArrowDown' ? 1 : -1;
-    for (let i = 0; i < tItems.length; i++){ tActive = (tActive + step + tItems.length) % tItems.length; if (!onTeam(tItems[tActive].m)) break }
+    for (let i = 0; i < tItems.length; i++){ tActive = (tActive + step + tItems.length) % tItems.length; if (!taken(tItems[tActive].m)) break }
     markTActive() }
   else if (e.key === 'Enter'){ e.preventDefault(); if (!tq.value.trim()) return; if (tsug.hidden) renderTSug(); pickT(Math.max(tActive, 0)) }
   else if (e.key === 'Escape'){ if (!pop.hidden){ closePop(); e.stopPropagation(); return } if (!tsug.hidden){ closeTSug(); e.stopPropagation() } else if (tq.value){ tq.value = ''; e.stopPropagation() } }
