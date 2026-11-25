@@ -405,6 +405,7 @@ mark{background:color-mix(in srgb,var(--warn) 38%,transparent);color:inherit;bor
 .prose h1{margin:0 0 14px;font-size:clamp(36px,6vw,56px);font-weight:800;font-stretch:80%;letter-spacing:-.02em;line-height:1}
 .prose h2{margin:34px 0 8px;font-size:24px;font-weight:750;font-stretch:88%}
 .prose p,.prose li{font-size:17px;line-height:1.6;color:var(--muted)}
+.prose + footer.wrap{max-width:720px}   /* line up with the about page's text column */
 .prose b{color:var(--text)}
 .prose a{color:var(--text)}
 .top .btn{text-decoration:none;color:var(--text)}
