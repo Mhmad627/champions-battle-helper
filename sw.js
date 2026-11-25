@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v40';
+const VERSION = 'cbh-v41';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
@@ -38,21 +38,15 @@ self.addEventListener('install', e => {
     .catch(err => (existed ? Promise.resolve() : caches.delete(VERSION)).then(() => { throw err }))));
   // A new version then waits: open pages keep using the old one (offline too) until the person taps
   // Reload in the update banner (js/update.js), which sends 'skip-waiting'.
-  // Versions up to cbh-v38 had no waiting step, and their pages can't send that message. Those workers
-  // don't answer a 'ping' either, so if the running worker stays silent, take over straight away as they did.
-  const active = self.registration.active;
-  if (active) e.waitUntil(new Promise(done => {
-    const t = setTimeout(() => { pong = null; done(false) }, 2000);
-    pong = () => { clearTimeout(t); pong = null; done(true) };
-    active.postMessage('ping');
-  }).then(answered => answered || self.skipWaiting()));
+  // Versions up to cbh-v38 had no waiting step and their pages can't send that message, so when replacing one
+  // of those, take over straight away as they did. Same when no older version has files stored (nothing to
+  // keep running). From cbh-v39 on, every version waits.
+  e.waitUntil(caches.keys().then(keys => {
+    const older = keys.map(k => /^cbh-v(\d+)$/.exec(k)).filter(m => m && m[0] !== VERSION).map(m => +m[1]);
+    if (!older.length || older.some(n => n <= 38)) return self.skipWaiting();
+  }));
 });
-let pong = null;
-self.addEventListener('message', e => {
-  if (e.data === 'skip-waiting') self.skipWaiting();
-  else if (e.data === 'ping' && e.source) e.source.postMessage('pong');   // a newer version asking: "do you wait?"
-  else if (e.data === 'pong' && pong) pong();
-});
+self.addEventListener('message', e => { if (e.data === 'skip-waiting') self.skipWaiting() });
 
 self.addEventListener('activate', e => {
   // Delete every other version (older ones, or newer ones left by a rollback) and old icon caches.

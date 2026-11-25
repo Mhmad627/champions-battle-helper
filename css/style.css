@@ -367,7 +367,7 @@ button.pair-warn{position:relative;border:0;padding:0;cursor:pointer}
 .ab-mons summary:hover{color:var(--text)}
 .ab-mons .same{margin-top:8px}
 .same button small{margin-left:2px;font-size:12px;font-weight:600;color:var(--muted)}
-.update{position:fixed;z-index:55;left:50%;bottom:20px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 24px);padding:8px 6px 8px 16px;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:0 16px 40px -14px rgba(0,0,0,.55);font-size:15px;font-weight:600}
+.update{position:fixed;z-index:55;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 24px);padding:8px 6px 8px 16px;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:0 16px 40px -14px rgba(0,0,0,.55);font-size:15px;font-weight:600}
 .update-x{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:none;color:var(--muted)}
 .update-x svg{width:18px;height:18px}
 .update-x:hover{color:var(--text)}

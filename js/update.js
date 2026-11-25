@@ -11,11 +11,10 @@
   const hadWorker = !!sw.controller;
   let reg = null, lastCheck = Date.now(), lastFocus = null, reloading = false;
 
-  // Tell screen readers through the page's live region (both pages have #announce in their markup).
-  function say(text){
-    const el = document.getElementById('announce'); if (!el) return;
-    el.textContent = ''; setTimeout(() => { el.textContent = text }, 50);
-  }
+  // The banner's own live region, added now (empty) so screen readers are already watching it when it's filled.
+  const live = document.createElement('p'); live.className = 'sr'; live.setAttribute('aria-live', 'polite');
+  document.body.append(live);
+  const say = text => { live.textContent = text };
   // Remember where keyboard focus was before it moved into the banner, to put it back on close.
   document.addEventListener('focusin', e => { if (!e.target.closest('#update')) lastFocus = e.target });
 
