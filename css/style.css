@@ -367,6 +367,7 @@ button.pair-warn{position:relative;border:0;padding:0;cursor:pointer}
 .ab-mons summary:hover{color:var(--text)}
 .ab-mons .same{margin-top:8px}
 .same button small{margin-left:5px;font-size:11.5px;font-weight:600;color:var(--faint)}
+.team-note{margin:8px 0 0;font-size:14px;color:var(--muted)}
 .ab-more{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 2px 4px;color:var(--faint);font-size:14px}
 .ab-empty{grid-column:1/-1;padding:30px 10px;text-align:center;color:var(--faint)}
 mark{background:color-mix(in srgb,var(--warn) 38%,transparent);color:inherit;border-radius:3px;padding:0 1px}
@@ -541,6 +542,10 @@ dialog.rank::backdrop{background:rgba(8,10,25,.6);backdrop-filter:blur(3px)}
   .manual h2{font-size:17px}
   .ab{padding:12px 13px;border-radius:14px}
   .ab-name{font-size:16px}
+  .ab-mons summary{min-height:40px;display:flex;align-items:center;gap:6px;list-style:none}
+  .ab-mons summary::-webkit-details-marker{display:none}
+  .ab-mons summary::before{content:"▸";font-size:12px}
+  .ab-mons[open] summary::before{content:"▾"}
   .ab p{font-size:14px;line-height:1.45}
   .ab p.sum,.ab .fx{font-size:13px}
   .fcard{padding:14px;border-radius:18px}

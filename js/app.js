@@ -227,7 +227,7 @@ function renderPlan(){
 
   if (mon && !abs.length) h += `<div class="abil">Ability: not listed yet for this form.</div>`;
   if (abs.length){
-    h += `<div class="abil">${abs.length > 1 ? 'Possible abilities:' : 'Ability:'} ${abs.map(a => `<button class="abtn" data-ab="${esc(a.name)}">${esc(a.name)}${a.hidden ? '<i>hidden</i>' : ''}</button>`).join('')}</div>`;
+    h += `<div class="abil">${abs.length > 1 ? 'Possible abilities:' : 'Ability:'} ${abs.map(a => `<button class="abtn" data-ab="${esc(a.name)}">${esc(a.name)}${a.hidden ? ' <i>hidden</i><span class="sr"> ability</span>' : ''}</button>`).join('')}</div>`;
   }
 
   if (mode === 'fight'){
@@ -382,11 +382,11 @@ MON.forEach(m => [...new Set([...m.abil, ...(m.hidden ? [m.hidden] : [])])].forE
 }));
 AB_MONS.forEach(l => l.sort((a, b) => b.m.champ - a.m.champ || a.m.no - b.m.no || a.m.i - b.m.i));
 function abMons(name){
-  return (AB_MONS.get(name) || []).map(({ m, hidden }) => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${monImg(m, 26)}${esc(m.name)}${hidden ? '<small>hidden</small>' : ''}${m.champ ? '' : `<span class="sr"> (${notIn(m).replace('Not in', 'not in')})</span>`}</button>`).join('');
+  return (AB_MONS.get(name) || []).map(({ m, hidden }) => `<button data-mon="${m.slug}"${m.champ ? '' : ` class="out" title="${notIn(m)}"`}>${monImg(m, 26)}${esc(m.name)}${hidden ? ' <small>hidden</small><span class="sr"> ability</span>' : ''}${m.champ ? '' : `<span class="sr"> (${notIn(m).replace('Not in', 'not in')})</span>`}</button>`).join('');
 }
 // Phones show the list a few at a time; computers have a scroll box.
-const AB_STEP = () => matchMedia('(max-width:700px)').matches ? 15 : 160;
-let abShown = 0;
+const AB_STEP = () => matchMedia('(max-width:640px)').matches ? 15 : 160;   // same width as the CSS that drops the box
+let abShown = 0, abStep = 160;   // abStep: the batch size the "Show N more" button promised
 function abCard(a, qq, open){
   const n = (AB_MONS.get(a.name) || []).length, ql = qq.toLowerCase();
   return `<article class="ab${ql && a.name.toLowerCase() === ql ? ' hit' : ''}">
@@ -403,11 +403,12 @@ function renderAbilities(more){
   const el = $('abList');
   if (!list.length){ el.innerHTML = `<div class="ab-empty">No ability matches “${esc(qq)}”. Try a shorter word.</div>`; return }
   const from = more ? abShown : 0;
-  abShown = Math.min(list.length, from + AB_STEP());
+  if (!more) abStep = AB_STEP();
+  abShown = Math.min(list.length, from + abStep);
   // A search that names one ability exactly (or finds just one) opens its Pokémon list.
   const cards = list.slice(from, abShown).map(a => abCard(a, qq, list.length === 1 || (ql && a.name.toLowerCase() === ql))).join('');
   const left = list.length - abShown;
-  const tail = left > 0 ? `<div class="ab-more"><button class="btn" data-abmore>Show ${Math.min(left, AB_STEP())} more</button><span>${left} not shown. Type to narrow it down.</span></div>` : '';
+  const tail = left > 0 ? `<div class="ab-more"><button class="btn" data-abmore>Show ${Math.min(left, abStep)} more</button><span>${left} not shown. Type to narrow it down.</span></div>` : '';
   if (more){
     el.querySelector('.ab-more')?.remove();
     el.insertAdjacentHTML('beforeend', cards + tail);
@@ -424,7 +425,10 @@ $('abList').addEventListener('click', e => {
   renderAbilities(true);
   // Keep keyboard focus in place: move it to the first new card's Pokémon list (or the next button).
   const next = $('abList').querySelectorAll('.ab')[first];
-  (next?.querySelector('summary') || $('abList').querySelector('[data-abmore]'))?.focus({ preventScroll: true });
+  if (!next) return;
+  // The first new card's Pokémon list, or the card itself if it has none.
+  const to = next.querySelector('summary') || (next.tabIndex = -1, next);
+  to.focus({ preventScroll: true });
 });
 $('abQ').addEventListener('input', () => renderAbilities());
 $('abGen').addEventListener('change', () => renderAbilities());

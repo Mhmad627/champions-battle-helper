@@ -5,8 +5,9 @@ const TEAM_MAX = 6;
 const SAMPLE_TEAM = ['garchomp', 'incineroar', 'kingambit', 'primarina', 'dragonite', 'sinistcha'];
 const savedTeam = store.get('tcs-team', []);   // ignore anything that isn't a list of names
 // One of each species: a Pokémon and its Mega or Primal form share a Pokédex number and can't both be on it.
-let team = [...new Set(Array.isArray(savedTeam) ? savedTeam : [])].map(s => BY_SLUG.get(s)).filter(Boolean)
-  .filter((m, i, a) => a.findIndex(x => x.no === m.no) === i).slice(0, TEAM_MAX);
+const loaded = [...new Set(Array.isArray(savedTeam) ? savedTeam : [])].map(s => BY_SLUG.get(s)).filter(Boolean);
+let team = loaded.filter((m, i, a) => a.findIndex(x => x.no === m.no) === i).slice(0, TEAM_MAX);
+const dropped = loaded.filter(m => !team.includes(m) && team.some(x => x.no === m.no));
 let tableOpen = true;                            // remembers if the big table was closed
 let tmode = store.get('tcs-team-mode', 'use') === 'fight' ? 'fight' : 'use';
 
@@ -17,6 +18,14 @@ const taken = m => onTeam(m) || !!twin(m);
 const twinMsg = (m, t) => `${t.name} is already on the team. A team can only have one of each Pokémon, so ${t.name} and ${m.name} can't both be on it.`;
 const say = text => { $('teamLive').textContent = ''; setTimeout(() => $('teamLive').textContent = text, 30) };
 const count = n => `${n} Pokémon`;
+// A team saved before the one-of-each rule may hold two forms of a Pokémon: keep the first and say so.
+if (dropped.length){
+  store.set('tcs-team', team.map(m => m.slug));
+  setTimeout(() => {
+    const msg = `Took ${dropped.map(m => m.name).join(' and ')} off the team: a team can only have one of each Pokémon.`;
+    say(msg); const n = $('teamNote'); if (n){ n.textContent = msg; n.hidden = false }
+  }, 0);
+}
 
 function addToTeam(m){
   if (!m || onTeam(m)) return false;
@@ -244,6 +253,7 @@ $('teamOut').addEventListener('keydown', e => {
 document.addEventListener('click', e => { if (tFocus && !e.target.closest('.ttable')) clearTFocus() });
 
 function renderTeam(){
+  $('teamNote').hidden = true;   // the note about a trimmed saved team goes once the team changes
   const n = team.length;
   tFocus = null;
   $('teamSlots').innerHTML = team.map((m, i) => `<li class="tslot">${monImg(m, 44, 'tslot-mi')}<span class="ts">${m.types.map(t => icon(t, 22)).join('')}</span><span class="tslot-nm"><button class="tslot-name" data-mon="${m.slug}" title="Look up ${esc(m.name)}">${esc(m.name)}</button>${m.champ ? '' : `<span class="nic">${notIn(m, true)}</span>`}</span><button class="tslot-x" data-trm="${i}" aria-label="Remove ${esc(m.name)}">${X_SVG}</button></li>`).join('');
