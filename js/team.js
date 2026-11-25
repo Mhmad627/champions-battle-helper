@@ -12,7 +12,7 @@ let tableOpen = true;                            // remembers if the big table w
 let tmode = store.get('tcs-team-mode', 'use') === 'fight' ? 'fight' : 'use';
 
 // Saving means the team changed, so the note about a trimmed saved team (if any) goes too.
-const saveTeam = () => { store.set('tcs-team', team.map(m => m.slug)); $('teamNote').hidden = true };
+const saveTeam = () => { store.set('tcs-team', team.map(m => m.slug)); const n = $('teamNote'); if (n) n.hidden = true };
 const onTeam = m => team.some(x => x.slug === m.slug);
 const twin = m => team.find(x => x.no === m.no && x.slug !== m.slug);   // another form of it already on the team
 const taken = m => onTeam(m) || !!twin(m);
@@ -70,7 +70,9 @@ function closeTSug(){ tItems = []; tActive = -1; tsug.hidden = true; tq.setAttri
 function pickT(k){
   const r = tItems[k]; if (!r) return;
   if (onTeam(r.m)){ say(`${r.m.name} is already on the team.`); return }
-  const t = twin(r.m); if (t){ say(twinMsg(r.m, t)); return }
+  const t = twin(r.m);
+  // After this click finishes (the page closes pop-ups on any click), explain why it can't be added.
+  if (t){ closeTSug(); setTimeout(() => openPop(tq, 'One of each Pokémon', `<p>${esc(twinMsg(r.m, t))} To swap them, remove ${esc(t.name)} from the team first.</p>`)); return }
   closeTSug(); tq.value = '';
   addToTeam(r.m);
   // The box is disabled once the team is full, so move focus to the new Pokémon's remove button.

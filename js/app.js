@@ -412,6 +412,7 @@ function renderAbilities(more){
   if (more){
     el.querySelector('.ab-more')?.remove();
     el.insertAdjacentHTML('beforeend', cards + tail);
+    $('announce').textContent = `Showing ${abShown} of ${list.length} abilities.`;
   } else { el.innerHTML = cards + tail; el.scrollTop = 0 }
 }
 // Fill a Pokémon list the first time it's opened.
