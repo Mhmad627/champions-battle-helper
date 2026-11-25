@@ -290,8 +290,8 @@ function megaSec(m){
     return `<li>${monBtn(x, 30)}<div class="mega-fx"><span>${types}</span>${ab}</div></li>`;
   }).join('');
   const verb = primal ? 'Primal Revert' : 'Mega Evolve';
-  const when = primal ? (mode === 'fight' ? 'as soon as it comes out holding its orb, which changes what hits it' : 'by itself when it comes out holding its orb')
-    : (mode === 'fight' ? 'mid-battle, which can change what hits it' : 'once per battle, for one Pokémon on your team');
+  const when = primal ? (mode === 'fight' ? 'as soon as it comes out holding its orb. Tap it to see what hits it then' : 'by itself when it comes out holding its orb')
+    : (mode === 'fight' ? 'mid-battle. Tap it to see what hits it then' : 'once per battle, for one Pokémon on your team');
   return `<div class="plan-sec mega"><h3>It can ${verb} <small>${when}</small></h3><ul class="mega-list">${rows}</ul></div>`;
 }
 // Status conditions and effects a Pokémon's types make it immune to (Gen IX rules).
