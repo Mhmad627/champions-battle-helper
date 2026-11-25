@@ -122,8 +122,42 @@ function pick(k){
   const r = sugItems[k]; if (!r) return;
   closeSug(); q.value = ''; $('qClear').hidden = true;
   if (r.kind === 'type') setTypes([r.t]); else setMon(r.m);
-  if (matchMedia('(max-width:700px)').matches) q.blur();
-  $('plan').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  // Touch screens always close the keyboard first. (Telling whether an on-screen keyboard is up isn't reliable
+  // across phone browsers, so a tablet with a hardware keyboard gets the same treatment.)
+  if (matchMedia('(pointer:coarse)').matches){
+    // Touch screens (phones and tablets): close the keyboard, move focus to the new card (as tapping a Pokémon
+    // in Recent does), then centre the card once the keyboard has finished closing.
+    q.blur(); $('plan').querySelector('.plan-name')?.focus({ preventScroll: true });
+    afterKeyboard(showPlan);
+  } else {
+    // Computers: the cursor stays in the search box, so centre the box and the card together (a card taller than
+    // the screen puts the box just under the header). Nothing moves if they're all in view already, and picking
+    // again from the same spot scrolls by 0.
+    const a = q.getBoundingClientRect(), b = $('plan').getBoundingClientRect(), v = visibleArea();
+    if (a.top < v.top || b.bottom > v.bottom) centerSpan(a.top, b.bottom, true);
+  }
+}
+// Run fn once the on-screen keyboard has closed: when the screen has stopped changing size, or after 450ms if
+// it never starts (longer than the keyboard's slide, as iPhones can report the change late), 1s at most. A tap, click, wheel, key or Back in the
+// meantime cancels it, so the page never jumps after you've moved on.
+let kbCancel = null;
+function afterKeyboard(fn){
+  if (kbCancel) kbCancel();
+  const vv = window.visualViewport;
+  let wait = 0, cap = 0;
+  const EVENTS = ['touchstart', 'pointerdown', 'wheel', 'keydown', 'popstate'];
+  const stop = () => { clearTimeout(wait); clearTimeout(cap); vv && vv.removeEventListener('resize', onResize);
+    removeEventListener('resize', onResize); EVENTS.forEach(ev => removeEventListener(ev, stop)); kbCancel = null };
+  const go = () => { stop(); fn() };
+  // Every size change (the keyboard sliding away) restarts a short wait; the page is measured once it's still.
+  const onResize = () => { clearTimeout(wait); wait = setTimeout(go, 150) };
+  vv && vv.addEventListener('resize', onResize);
+  addEventListener('resize', onResize);   // browsers that shrink the whole page for the keyboard
+  // Listen from the next moment on, so the tap or Enter that picked the Pokémon doesn't count.
+  setTimeout(() => { if (kbCancel === stop) EVENTS.forEach(ev => addEventListener(ev, stop, { passive: true })) });
+  kbCancel = stop;
+  wait = setTimeout(go, 450);   // no size change seen: the keyboard was already closed
+  cap = setTimeout(go, 1000);
 }
 q.addEventListener('input', renderSug);
 q.addEventListener('focus', () => { if (q.value.trim()) renderSug() });
@@ -363,10 +397,18 @@ g.addEventListener('click', e => {
 // Scroll so the span from a to z (viewport y positions) is centred in the visible area, between the
 // sticky header and the phone tab bar. With topIfTall, a span taller than the screen is lined up
 // with its top just under the header instead, so its start (e.g. the Pokémon's name) stays in view.
-function centerSpan(a, z, topIfTall){
+// The part of the screen content can be seen in: below the sticky header, above the phone tab bar and the
+// update banner (when they're showing).
+function visibleArea(){
   const top = document.querySelector('.top')?.getBoundingClientRect().bottom || 0;
-  const bar = $('tabbar'), barH = bar && getComputedStyle(bar).display !== 'none' ? bar.offsetHeight : 0;
-  const room = innerHeight - barH - top;
+  let bottom = innerHeight;
+  const bar = $('tabbar'); if (bar && getComputedStyle(bar).display !== 'none') bottom -= bar.offsetHeight;
+  // The update banner spans the bottom on phones; on computers it's a small pill and doesn't need the room.
+  const up = $('update'); if (up && matchMedia('(max-width:700px)').matches) bottom = Math.min(bottom, up.getBoundingClientRect().top - 8);
+  return { top, bottom };
+}
+function centerSpan(a, z, topIfTall){
+  const { top, bottom } = visibleArea(), room = bottom - top;
   scrollBy({ top: topIfTall && z - a > room ? a - top - 12 : (a + z) / 2 - (top + room / 2), behavior: 'instant' });
 }
 function centerChart(){
