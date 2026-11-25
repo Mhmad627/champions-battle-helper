@@ -14,7 +14,9 @@
   // The banner's own live region, added now (empty) so screen readers are already watching it when it's filled.
   const live = document.createElement('p'); live.className = 'sr'; live.setAttribute('aria-live', 'polite');
   document.body.append(live);
-  const say = text => { live.textContent = text };
+  const say = text => { live.textContent = ''; setTimeout(() => { live.textContent = text }, 50) };   // cleared first so a repeat is read too
+  // Pages with the phone tab bar place the banner above it (a class, so older browsers without :has() work too).
+  if (document.querySelector('.tabbar')) document.body.classList.add('has-tabbar');
   // Remember where keyboard focus was before it moved into the banner, to put it back on close.
   document.addEventListener('focusin', e => { if (!e.target.closest('#update')) lastFocus = e.target });
 
@@ -30,13 +32,13 @@
       // Switch to the new version, then reload once it has taken over (or after 3 seconds regardless).
       sw.addEventListener('controllerchange', reload, { once: true });
       waiting.postMessage('skip-waiting');
-      // If an even newer version replaced that one meanwhile, ask the newest one, then reload regardless.
+      // If an even newer version replaced that one meanwhile, ask that one instead. Otherwise just wait:
+      // the reload happens when the switch does, and the banner stays up until then.
       setTimeout(() => {
-        if (reloading) return;
-        if (reg.waiting && reg.waiting !== waiting){ reg.waiting.postMessage('skip-waiting'); setTimeout(reload, 3000) }
-        else reload();
+        if (!reloading && reg.waiting && reg.waiting !== waiting) reg.waiting.postMessage('skip-waiting');
       }, 3000);
     });
+    document.getElementById('update').addEventListener('keydown', e => { if (e.key === 'Escape'){ e.stopPropagation(); document.getElementById('updateX').click() } });
     document.getElementById('updateX').addEventListener('click', () => {
       const bar = document.getElementById('update'), hadFocus = bar.contains(document.activeElement);
       bar.remove(); document.body.classList.remove('has-update');
@@ -51,7 +53,8 @@
   const watch = w => { if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') check() }) };
 
   // Another tab tapped Reload, so the new version now runs this page too: offer a reload here as well.
-  sw.addEventListener('controllerchange', () => { if (hadWorker && !reloading) show() });
+  // (The very first switch, when the site is first installed, isn't an update: just note it.)
+  sw.addEventListener('controllerchange', () => { if (!hadWorker){ hadWorker = true; return } if (!reloading) show() });
 
   addEventListener('load', () => sw.register('sw.js').then(r => {
     reg = r; if (r.active) hadWorker = true; check();

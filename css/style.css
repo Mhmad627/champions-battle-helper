@@ -375,9 +375,9 @@ body.has-update{padding-bottom:calc(120px + env(safe-area-inset-bottom))}   /* r
 html:has(body.has-update){scroll-padding-bottom:calc(120px + env(safe-area-inset-bottom))}   /* keep focused things clear of the banner */
 @media (max-width:700px){
   /* Above the tab bar on the main page; the about page has no tab bar. */
-  body:has(.tabbar) .update{bottom:calc(84px + env(safe-area-inset-bottom))}
-  body.has-update:has(.tabbar){padding-bottom:calc(170px + env(safe-area-inset-bottom))}   /* tab bar + a banner that may wrap */
-  html:has(body.has-update .tabbar){scroll-padding-bottom:calc(170px + env(safe-area-inset-bottom))}
+  body.has-tabbar .update{bottom:calc(84px + env(safe-area-inset-bottom))}
+  body.has-update.has-tabbar{padding-bottom:calc(170px + env(safe-area-inset-bottom))}   /* tab bar + a banner that may wrap */
+  html:has(body.has-update.has-tabbar){scroll-padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 }
 .team-note{margin:8px 0 0;font-size:14px;color:var(--muted)}
 .ab-more{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 2px 4px;color:var(--faint);font-size:14px}
