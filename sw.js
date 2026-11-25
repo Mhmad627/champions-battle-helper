@@ -1,6 +1,6 @@
 // Service worker: makes the site work offline after the first visit.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'cbh-v39';
+const VERSION = 'cbh-v40';
 // Pokémon icons are cached as they're seen, in a cache that survives normal deploys. Its name carries a
 // fingerprint of the icons, written by tools/get_sprites.py, so rebuilt icons replace the old ones.
 const IMG = 'cbh-icons-4aef74df';
@@ -38,13 +38,21 @@ self.addEventListener('install', e => {
     .catch(err => (existed ? Promise.resolve() : caches.delete(VERSION)).then(() => { throw err }))));
   // A new version then waits: open pages keep using the old one (offline too) until the person taps
   // Reload in the update banner (js/update.js), which sends 'skip-waiting'.
-  // Versions up to cbh-v38 had no waiting step and their pages can't send that message, so when replacing
-  // one of those, take over straight away as they did (their pages then show their own banner).
-  e.waitUntil(caches.keys().then(keys => {
-    if (keys.some(k => { const m = /^cbh-v(\d+)$/.exec(k); return m && +m[1] <= 38 })) return self.skipWaiting();
-  }));
+  // Versions up to cbh-v38 had no waiting step, and their pages can't send that message. Those workers
+  // don't answer a 'ping' either, so if the running worker stays silent, take over straight away as they did.
+  const active = self.registration.active;
+  if (active) e.waitUntil(new Promise(done => {
+    const t = setTimeout(() => { pong = null; done(false) }, 2000);
+    pong = () => { clearTimeout(t); pong = null; done(true) };
+    active.postMessage('ping');
+  }).then(answered => answered || self.skipWaiting()));
 });
-self.addEventListener('message', e => { if (e.data === 'skip-waiting') self.skipWaiting() });
+let pong = null;
+self.addEventListener('message', e => {
+  if (e.data === 'skip-waiting') self.skipWaiting();
+  else if (e.data === 'ping' && e.source) e.source.postMessage('pong');   // a newer version asking: "do you wait?"
+  else if (e.data === 'pong' && pong) pong();
+});
 
 self.addEventListener('activate', e => {
   // Delete every other version (older ones, or newer ones left by a rollback) and old icon caches.
@@ -59,7 +67,8 @@ const OFFLINE = new Response(`<!doctype html><meta name="viewport" content="widt
   { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 
 // Everything, pages included, comes from this version's cache first, so a page always runs with the
-// scripts and styles of its own version. A new deploy installs in the background and shows on the next visit.
+// scripts and styles of its own version. A new deploy installs in the background and waits until the person taps
+// Reload in the update banner (or every tab of the site is closed).
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;

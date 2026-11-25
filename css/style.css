@@ -372,7 +372,13 @@ button.pair-warn{position:relative;border:0;padding:0;cursor:pointer}
 .update-x svg{width:18px;height:18px}
 .update-x:hover{color:var(--text)}
 body.has-update{padding-bottom:84px}   /* room so the banner never covers the end of the page */
-@media (max-width:700px){ .update{bottom:calc(84px + env(safe-area-inset-bottom))} body.has-update{padding-bottom:calc(140px + env(safe-area-inset-bottom))} }
+html:has(body.has-update){scroll-padding-bottom:84px}   /* keep focused things clear of the banner */
+@media (max-width:700px){
+  /* Above the tab bar on the main page; the about page has no tab bar. */
+  body:has(.tabbar) .update{bottom:calc(84px + env(safe-area-inset-bottom))}
+  body.has-update:has(.tabbar){padding-bottom:calc(140px + env(safe-area-inset-bottom))}
+  html:has(body.has-update .tabbar){scroll-padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+}
 .team-note{margin:8px 0 0;font-size:14px;color:var(--muted)}
 .ab-more{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 2px 4px;color:var(--faint);font-size:14px}
 .ab-empty{grid-column:1/-1;padding:30px 10px;text-align:center;color:var(--faint)}

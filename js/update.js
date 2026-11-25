@@ -8,17 +8,18 @@
   const sw = navigator.serviceWorker;
   const CHECK_EVERY = 30 * 60 * 1000;   // look for updates at most every 30 minutes when the tab comes back
   const X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-  let reg = null, lastCheck = Date.now(), lastFocus = null;
+  const hadWorker = !!sw.controller;
+  let reg = null, lastCheck = Date.now(), lastFocus = null, reloading = false;
 
-  // Tell screen readers through a live region that's already on the page (filled after a moment, so it's read).
+  // Tell screen readers through the page's live region (both pages have #announce in their markup).
   function say(text){
-    let el = document.getElementById('announce');
-    if (!el){ el = document.createElement('p'); el.id = 'announce'; el.className = 'sr'; el.setAttribute('aria-live', 'polite'); document.body.append(el) }
+    const el = document.getElementById('announce'); if (!el) return;
     el.textContent = ''; setTimeout(() => { el.textContent = text }, 50);
   }
   // Remember where keyboard focus was before it moved into the banner, to put it back on close.
   document.addEventListener('focusin', e => { if (!e.target.closest('#update')) lastFocus = e.target });
 
+  function reload(){ if (!reloading){ reloading = true; location.reload() } }
   function show(){
     if (document.getElementById('update')) return;
     document.body.insertAdjacentHTML('beforeend', `<div class="update" id="update"><span>A new version is ready.</span><button class="btn" id="updateGo">Reload</button><button class="update-x" id="updateX" aria-label="Not now">${X}</button></div>`);
@@ -26,26 +27,31 @@
     say('A new version of the site is ready. Reload to use it.');
     document.getElementById('updateGo').addEventListener('click', () => {
       const waiting = reg && reg.waiting;
-      if (!waiting){ location.reload(); return }
-      // Switch to the new version, then reload once it has taken over.
-      sw.addEventListener('controllerchange', () => location.reload(), { once: true });
+      if (!waiting){ reload(); return }
+      // Switch to the new version, then reload once it has taken over (or after 3 seconds regardless).
+      sw.addEventListener('controllerchange', reload, { once: true });
       waiting.postMessage('skip-waiting');
+      setTimeout(reload, 3000);
     });
     document.getElementById('updateX').addEventListener('click', () => {
-      const hadFocus = document.getElementById('update').contains(document.activeElement);
-      document.getElementById('update').remove(); document.body.classList.remove('has-update');
-      if (hadFocus && lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+      const bar = document.getElementById('update'), hadFocus = bar.contains(document.activeElement);
+      bar.remove(); document.body.classList.remove('has-update');
+      if (!hadFocus) return;
+      const to = lastFocus && document.contains(lastFocus) ? lastFocus : document.getElementById('q') || document.querySelector('main');
+      if (to){ if (to.tagName === 'MAIN') to.tabIndex = -1; to.focus({ preventScroll: true }) }
     });
   }
   // A version is waiting while an older one is running: offer it.
   const check = () => { if (reg && reg.waiting && reg.active) show() };
+  const watch = w => { if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') check() }) };
+
+  // Another tab tapped Reload, so the new version now runs this page too: offer a reload here as well.
+  sw.addEventListener('controllerchange', () => { if (hadWorker && !reloading) show() });
 
   addEventListener('load', () => sw.register('sw.js').then(r => {
     reg = r; check();
-    r.addEventListener('updatefound', () => {
-      const w = r.installing;
-      if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') check() });
-    });
+    watch(r.installing);                                   // an update that started while the page loaded
+    r.addEventListener('updatefound', () => watch(r.installing));
     // Phones keep the site open for hours: look for an update when it comes back on screen.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible' || Date.now() - lastCheck < CHECK_EVERY) return;
